@@ -1,0 +1,57 @@
+{
+  "name": "greencampus-backend",
+  "version": "1.0.0",
+  "description": "API GreenCampus HdF",
+  "main": "dist/server.js",
+  "scripts": {
+    "test": "vitest run",
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.seed.json",
+    "start": "node dist/server.js",
+    "typecheck": "tsc -p tsconfig.check.json",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "db:seed-demo": "tsx scripts/demo-data.ts",
+    "db:reset-admin": "tsx scripts/reset-admin.ts",
+    "db:suppression-finale": "tsx src/outils/suppression-finale.ts"
+  },
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@fastify/cookie": "^11.1.5",
+    "@fastify/cors": "^11.4.1",
+    "@fastify/helmet": "^13.2.0",
+    "@fastify/jwt": "^10.2.7",
+    "@fastify/rate-limit": "^11.2.2",
+    "@fastify/static": "^10.1.6",
+    "@fastify/swagger": "^9.9.3",
+    "@fastify/swagger-ui": "^6.1.3",
+    "@incubateur-ademe/nosgestesclimat": "4.10.4",
+    "@prisma/client": "^6.19.3",
+    "argon2": "^0.45.2",
+    "fastify": "^5.12.5",
+    "fastify-plugin": "^6.0.1",
+    "fastify-type-provider-zod": "^7.0.0",
+    "publicodes": "^1.10.4",
+    "web-push": "^3.6.7",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/web-push": "^3.6.4",
+    "prisma": "^6.19.3",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "overrides": {
+    "deepmerge-ts": "^8.0.2"
+  }
+}

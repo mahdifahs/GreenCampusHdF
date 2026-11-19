@@ -1,0 +1,8 @@
+[
+  {
+    "id": "GHSA-fc5q-39xc-vjpf",
+    "paquet": "picomatch <=4.0.7",
+    "raison": "ReDoS sans correctif publié (4.0.7 = dernière version au 18/11/2026). Tiré uniquement par vite, vitest et tinyglobby (outils de build et de test, absents de l'image Docker et du front publié) ; les motifs glob traités viennent de la configuration du projet, jamais d'un utilisateur. npm audit --omit=dev : 0 vulnérabilité (backend et frontend). Exception validée par Ethan B. le 18/11/2026.",
+    "expire": "2026-12-05"
+  }
+]

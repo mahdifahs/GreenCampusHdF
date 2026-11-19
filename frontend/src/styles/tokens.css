@@ -1,0 +1,103 @@
+/* Charte graphique GreenCampus HdF — identité validée le 2026-10-16.
+   Référence visuelle : https://claude.ai/artifact/8TXAdKZXBFRKRc94AGTESE
+   Polices auto-hébergées via @fontsource (voir imports dans main.tsx) pour ne pas
+   dépendre d'une connexion internet fiable le jour de l'événement. */
+
+:root {
+  --bg: #eff4ea;
+  --surface: #ffffff;
+  --surface-sunken: #e3ecdd;
+  --ink: #16261e;
+  --muted: #5b6b60;
+  --border: #d9e3d4;
+
+  /* Corail « brique » (variante C, choisie le 13/11/2026 pour la lisibilité) : texte clair dessus = 5,6:1,
+     texte corail sur fond clair = 5,3:1 (minimum WCAG AA : 4,5:1). Le logo garde le corail vif (--logo). */
+  --brand: #b33a26;
+  --brand-strong: #992f1d;
+  --sur-brand: #fff6f3;
+  --logo: #ff6b52;
+  --eco: #187459; /* un peu plus foncé que #1b8065 : 4,8:1 sur --eco-tint (badges), 13/11/2026 */
+  --eco-tint: #dcefe6;
+  --pop: #ffc845;
+  --pop-ink: #6b4a00;
+
+  --danger: #dc2626;
+  --danger-tint: #fbe3e1;
+  --warning: #c2650d;
+  --warning-tint: #fbe8d4;
+
+  --font-display: 'Unbounded', system-ui, sans-serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'Courier New', monospace;
+
+  --r-sm: 10px;
+  --r-md: 18px;
+  --r-lg: 28px;
+  --r-pill: 999px;
+
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-7: 3rem;
+  --sp-8: 4rem;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0f1b15;
+    --surface: #17271f;
+    --surface-sunken: #0c1510;
+    --ink: #eaf2ec;
+    --muted: #9fb3a6;
+    --border: #27392f;
+
+    --brand: #ff8268;
+    --brand-strong: #ffa08a;
+    /* En sombre, texte foncé sur le corail clair (7,3:1) : un texte clair y serait illisible. */
+    --sur-brand: #0f1b15;
+    --logo: #ff8268;
+    --eco: #3fbe95;
+    --eco-tint: #163a2e;
+    --pop: #ffd262;
+    --pop-ink: #3a2800;
+
+    --danger: #f2675f;
+    --danger-tint: #3a1c1a;
+    --warning: #f0a63d;
+    --warning-tint: #3a2710;
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #0f1b15;
+  --surface: #17271f;
+  --surface-sunken: #0c1510;
+  --ink: #eaf2ec;
+  --muted: #9fb3a6;
+  --border: #27392f;
+
+  --brand: #ff8268;
+  --brand-strong: #ffa08a;
+  /* En sombre, texte foncé sur le corail clair (7,3:1) : un texte clair y serait illisible. */
+  --sur-brand: #0f1b15;
+  --logo: #ff8268;
+  --eco: #3fbe95;
+  --eco-tint: #163a2e;
+  --pop: #ffd262;
+  --pop-ink: #3a2800;
+
+  --danger: #f2675f;
+  --danger-tint: #3a1c1a;
+  --warning: #f0a63d;
+  --warning-tint: #3a2710;
+
+  color-scheme: dark;
+}

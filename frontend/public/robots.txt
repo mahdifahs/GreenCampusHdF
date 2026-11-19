@@ -1,0 +1,3 @@
+# Site réservé aux participants de l'évènement (accès par QR code) : aucune indexation.
+User-agent: *
+Disallow: /

@@ -1,0 +1,32 @@
+.evenements {
+  margin-top: var(--sp-5);
+}
+
+.liste {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+}
+
+.carte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.carte h3 {
+  margin-top: var(--sp-1);
+}
+
+.lieu {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.erreur {
+  color: var(--danger);
+  background: var(--danger-tint);
+  border-radius: var(--r-sm);
+  padding: var(--sp-3);
+  margin-top: var(--sp-3);
+}

@@ -1,0 +1,42 @@
+.tuiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--sp-3);
+}
+.tuile {
+  text-align: center;
+}
+.tuile strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+}
+.tuile span {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.classement {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+.ligne {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+}
+.rang {
+  font-family: var(--font-mono);
+  color: var(--muted);
+  width: 2.5rem;
+  flex: none;
+}
+.infos {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}

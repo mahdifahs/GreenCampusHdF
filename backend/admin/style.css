@@ -1,0 +1,298 @@
+/* Identité GreenCampus HdF (même palette/typo/rayons que frontend/src/styles/tokens.css),
+   appliquée ici directement en CSS brut : /admin/ n'a pas d'étape de build. Polices
+   auto-hébergées (fichiers copiés depuis les paquets @fontsource du front) pour ne pas
+   dépendre d'internet. */
+
+@font-face {
+  font-family: 'Unbounded';
+  src: url('fonts/unbounded-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Unbounded';
+  src: url('fonts/unbounded-latin-900-normal.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  src: url('fonts/plus-jakarta-sans-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  src: url('fonts/plus-jakarta-sans-latin-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --bg: #eff4ea;
+  --surface: #ffffff;
+  --surface-sunken: #e3ecdd;
+  --ink: #16261e;
+  --muted: #5b6b60;
+  --border: #d9e3d4;
+
+  /* Corail « brique » comme le site (13/11/2026) : texte clair sur les boutons lisible (5,6:1). */
+  --brand: #b33a26;
+  --brand-strong: #992f1d;
+  --logo: #ff6b52;
+  --eco: #187459; /* un peu plus foncé que #1b8065 : 4,8:1 sur --eco-tint (badges), 13/11/2026 */
+  --eco-tint: #dcefe6;
+  --pop: #ffc845;
+  --pop-ink: #6b4a00;
+
+  --danger: #dc2626;
+  --danger-tint: #fbe3e1;
+  --warning: #c2650d;
+  --warning-tint: #fbe8d4;
+
+  --font-display: 'Unbounded', system-ui, sans-serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  --r-sm: 10px;
+  --r-md: 18px;
+  --r-lg: 28px;
+  --r-pill: 999px;
+
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--bg);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; padding-bottom: 4rem; }
+
+header {
+  display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  padding: 1rem max(1rem, env(safe-area-inset-left, 0px));
+  background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap;
+}
+header strong { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; }
+header .accent { color: var(--logo); }
+header .marque { display: flex; align-items: center; gap: .55rem; }
+header .marque img { border-radius: 22%; flex: none; }
+header button { background: none; border: none; color: var(--muted); text-decoration: underline; padding: 0; }
+#session { display: flex; align-items: center; gap: .9rem; font-size: .85rem; color: var(--muted); }
+.badge { font-size: .75rem; font-weight: 600; background: var(--eco-tint); color: var(--eco); padding: 3px 10px; border-radius: var(--r-pill); margin-left: .5rem; }
+
+nav { display: flex; gap: .3rem; padding: .75rem max(1rem, env(safe-area-inset-left, 0px)) 0; border-bottom: 1px solid var(--border); overflow-x: auto; background: var(--surface); }
+nav button { font-weight: 600; border: none; border-radius: var(--r-pill); background: none; color: var(--muted); padding: .5rem 1rem; white-space: nowrap; }
+nav button.actif { color: var(--brand-strong); background: var(--eco-tint); }
+/* Les onglets ne sont pas des boutons d'action : on désactive explicitement le style de survol
+   générique des boutons ici (sinon il l'emporte sur .actif par spécificité CSS et rend l'onglet
+   actif illisible, texte corail sur fond corail, quand la souris passe dessus). */
+nav button:hover:not(:disabled) { background: var(--surface-sunken); }
+nav button.actif:hover:not(:disabled) { background: var(--eco-tint); }
+
+main { max-width: 1100px; margin: 0 auto; padding: 1rem max(1rem, env(safe-area-inset-left, 0px)); }
+h2 { font-family: var(--font-display); font-weight: 700; margin: 1.2rem 0 .6rem; font-size: 1.2rem; }
+h3 { font-family: var(--font-display); font-weight: 700; margin: 1rem 0 .4rem; font-size: 1.05rem; }
+p.aide { color: var(--muted); font-size: .9rem; margin: .2rem 0 .8rem; }
+
+.carte { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 1.2rem; margin-bottom: 1rem; }
+.grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+
+label { display: block; font-size: .85rem; font-weight: 600; color: var(--muted); margin: .6rem 0 .3rem; }
+input, select, textarea { font: inherit; padding: .6rem .8rem; border: 1.5px solid var(--border); border-radius: var(--r-sm); width: 100%; background: var(--surface); color: var(--ink); }
+input[type=checkbox], input[type=radio] { width: auto; margin-right: .4rem; }
+textarea { min-height: 4rem; resize: vertical; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--brand); }
+
+button {
+  font: inherit; font-weight: 700; cursor: pointer; padding: .55rem 1.1rem; border-radius: var(--r-pill);
+  border: 2px solid transparent; background: var(--brand); color: #fff6f3;
+}
+button:hover:not(:disabled) { background: var(--brand-strong); }
+button.secondaire { background: transparent; border-color: var(--ink); color: var(--ink); }
+button.secondaire:hover:not(:disabled) { background: var(--surface-sunken); }
+button.danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+button.danger:hover:not(:disabled) { background: var(--danger-tint); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .8rem; }
+
+.code { font-family: ui-monospace, monospace; font-size: 1.6rem; letter-spacing: .1em; background: var(--eco-tint); color: var(--eco); padding: .6rem 1rem; border-radius: var(--r-sm); display: inline-block; }
+.alerte { padding: .7rem 1rem; border-radius: var(--r-sm); margin: .8rem 0; }
+.alerte.erreur { background: var(--danger-tint); color: var(--danger); }
+.alerte.info { background: var(--eco-tint); color: var(--eco); }
+.alerte.attention { background: var(--warning-tint); color: var(--warning); }
+
+.question { border-bottom: 1px dashed var(--border); padding-bottom: .6rem; }
+.question small { color: var(--muted); }
+
+.barre { display: grid; grid-template-columns: 9rem 1fr 6rem; align-items: center; gap: .5rem; margin: .3rem 0; font-size: .9rem; }
+.barre .jauge { height: 14px; background: var(--eco-tint); border-radius: var(--r-pill); overflow: hidden; }
+.barre .jauge > div { height: 100%; background: var(--eco); }
+.barre .valeur { text-align: right; font-variant-numeric: tabular-nums; }
+
+.gros-chiffre { font-family: var(--font-display); font-size: 2rem; font-weight: 700; color: var(--brand-strong); }
+.chiffres { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .8rem; }
+.chiffres .carte { text-align: center; margin: 0; }
+.chiffres small { color: var(--muted); }
+
+/* Vue d'ensemble : chiffres clés compacts, deux groupes côte à côte (Participation | Stand). */
+.chiffres-cles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1.2rem 2rem; }
+.chiffres-cles h3 { margin-top: 0; }
+.chiffres-cles .aide { margin: .6rem 0 0; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: .4rem; }
+.kpi { display: flex; flex-direction: column; gap: .1rem; padding: .5rem .7rem; border-radius: var(--r-sm); background: var(--bg); }
+.kpi strong { font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.kpi span { font-size: .8rem; color: var(--muted); line-height: 1.25; }
+.kpis + .aide { margin-top: .6rem; }
+
+/* Graphiques (admin.js, graphiqueLignes). Couleurs des séries : palette catégorielle validée
+   (ordre fixe, distinguable en daltonisme) ; le texte reste dans les couleurs de texte. */
+:root {
+  --serie-1: #2a78d6;
+  --serie-2: #eb6834;
+  --serie-3: #1baf7a;
+  --serie-4: #eda100;
+  --serie-co2: var(--eco);
+}
+.entete-carte { display: flex; justify-content: space-between; align-items: center; gap: .8rem; flex-wrap: wrap; }
+.entete-carte h3 { margin: 0; }
+.bascule { display: inline-flex; border: 1.5px solid var(--border); border-radius: var(--r-pill); padding: 2px; background: var(--surface); }
+.bascule button { background: none; color: var(--muted); border: none; border-radius: var(--r-pill); padding: .35rem .9rem; font-size: .85rem; }
+.bascule button:hover:not(:disabled) { background: var(--surface-sunken); color: var(--ink); }
+.bascule button.actif, .bascule button.actif:hover:not(:disabled) { background: var(--ink); color: var(--surface); }
+.graphiques { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); gap: 1.2rem 2rem; margin-top: .6rem; }
+.figure-graphique { margin: 0; min-width: 0; }
+.figure-graphique figcaption { display: flex; justify-content: space-between; align-items: baseline; gap: .4rem 1rem; flex-wrap: wrap; margin-bottom: .3rem; }
+.figure-graphique h4 { margin: 0; font-size: .95rem; }
+.legende { display: flex; flex-wrap: wrap; gap: .2rem .9rem; list-style: none; margin: 0; padding: 0; font-size: .8rem; color: var(--muted); }
+.legende li { display: inline-flex; align-items: center; gap: .35rem; }
+.cle { display: inline-block; width: 14px; height: 0; border-top: 3px solid; border-radius: 2px; }
+.cle.s1, .serie.s1, .marque.s1 { color: var(--serie-1); }
+.cle.s2, .serie.s2, .marque.s2 { color: var(--serie-2); }
+.cle.s3, .serie.s3, .marque.s3 { color: var(--serie-3); }
+.cle.s4, .serie.s4, .marque.s4 { color: var(--serie-4); }
+.cle.co2, .serie.co2, .marque.co2 { color: var(--serie-co2); }
+.graphique { position: relative; width: 100%; }
+.graphique svg { display: block; overflow: visible; }
+.graphique .grille { stroke: var(--border); stroke-width: 1; }
+.graphique .axe { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.graphique .serie path { fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.graphique .serie circle { fill: currentColor; stroke: var(--surface); stroke-width: 2; }
+.graphique .etiquette { fill: var(--ink); font-size: 11.5px; font-weight: 600; }
+.graphique .repere { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.graphique .marque { fill: currentColor; stroke: var(--surface); stroke-width: 2; }
+.graphique .survol { fill: transparent; cursor: crosshair; outline: none; }
+.graphique .survol:focus-visible { stroke: var(--brand); stroke-width: 2; }
+.infobulle {
+  position: absolute; pointer-events: none; opacity: 0; transition: opacity .1s;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm);
+  box-shadow: 0 6px 20px rgb(22 38 30 / .12); padding: .5rem .7rem; font-size: .82rem; min-width: 10rem; z-index: 2;
+}
+.infobulle.visible { opacity: 1; }
+.infobulle .date { color: var(--muted); margin-bottom: .25rem; }
+.ligne-infobulle { display: flex; align-items: center; gap: .45rem; }
+.ligne-infobulle strong { font-variant-numeric: tabular-nums; min-width: 2.2rem; }
+details summary { cursor: pointer; color: var(--muted); font-size: .9rem; margin-top: .8rem; }
+details[open] summary { margin-bottom: .5rem; }
+
+.defi { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .6rem 0; border-bottom: 1px solid var(--border); }
+.defi .gain { font-weight: 700; color: var(--eco); white-space: nowrap; }
+.defi small { color: var(--muted); display: block; }
+.etoile { color: var(--pop-ink); }
+
+.statut { font-size: .78rem; font-weight: 600; padding: 3px 10px; border-radius: var(--r-pill); background: var(--eco-tint); color: var(--eco); margin-right: .3rem; white-space: nowrap; }
+.statut.NON_TENU { background: var(--danger-tint); color: var(--danger); }
+.statut.EN_COURS { background: var(--warning-tint); color: var(--warning); }
+.statut.alerte { background: var(--warning-tint); color: var(--warning); margin-left: .3rem; }
+
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th, td { text-align: left; padding: .5rem .4rem; border-bottom: 1px solid var(--border); }
+td.nombre, th.nombre { text-align: right; font-variant-numeric: tabular-nums; }
+table button { padding: .3rem .7rem; font-size: .85rem; }
+
+#journal { position: fixed; bottom: 0; left: 0; right: 0; background: var(--ink); color: var(--surface-sunken); font-size: .8rem; max-height: 45vh; overflow: auto; }
+#journal summary { padding: .5rem 1rem; cursor: pointer; }
+#journal pre { margin: 0; padding: 0 1rem 1rem; white-space: pre-wrap; word-break: break-word; }
+
+.filtres { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+.filtres input, .filtres select { width: auto; flex: 1 1 10rem; }
+.filtres label { display: flex; align-items: center; gap: .4rem; margin: 0; flex: 1 1 12rem; }
+
+.statut.niveau-info { background: var(--eco-tint); color: var(--eco); }
+.statut.niveau-alerte { background: var(--warning-tint); color: var(--warning); }
+.statut.niveau-critique { background: var(--danger-tint); color: var(--danger); }
+
+/* Mode maintenance : bandeau rouge bien visible tant qu'il est actif, ligne discrète sinon. */
+.maintenance { display: flex; justify-content: space-between; align-items: center; gap: .8rem; flex-wrap: wrap; }
+.maintenance.en-ligne { margin: 0 0 .8rem; font-size: .85rem; color: var(--muted); }
+.maintenance.en-ligne button { padding: .3rem .8rem; font-size: .8rem; }
+.alerte.maintenance { margin-top: 0; }
+
+/* ---------- Ajouts du 13/11/2026 : mobile, fenêtres, notifications, compteurs ---------- */
+
+/* Tableaux larges : défilement horizontal dans leur cadre au lieu de faire déborder la page. */
+.defilement { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.defilement table { min-width: 34rem; }
+td small.source { display: block; color: var(--muted); font-size: .78rem; margin-top: .15rem; }
+
+/* Compteur −1 / valeur / +1 (saisie rapide des vêtements au stand). */
+.compteur { display: inline-flex; align-items: center; gap: .4rem; white-space: nowrap; }
+.compteur span { min-width: 2.2ch; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.compteur button { padding: .35rem .7rem; }
+
+/* Fenêtre de dialogue (remplace confirm/prompt du navigateur). */
+dialog.dialogue {
+  border: 1px solid var(--border); border-radius: var(--r-lg); padding: 1.3rem;
+  width: min(30rem, calc(100vw - 2rem)); background: var(--surface); color: var(--ink);
+}
+dialog.dialogue::backdrop { background: rgb(22 38 30 / .45); }
+dialog.dialogue h3 { margin-top: 0; }
+
+/* Messages en haut de l'écran (remplacent alert). */
+.notifications {
+  position: fixed; top: .8rem; left: 50%; transform: translateX(-50%); z-index: 10;
+  width: min(32rem, calc(100vw - 2rem)); display: flex; flex-direction: column; gap: .4rem;
+}
+.notifications .alerte {
+  margin: 0; display: flex; justify-content: space-between; align-items: center; gap: .8rem;
+  border: 1px solid currentColor; box-shadow: 0 6px 20px rgb(22 38 30 / .15);
+}
+.notifications .fermer { background: none; border: none; color: inherit; font-size: 1.3rem; line-height: 1; padding: 0 .2rem; }
+.notifications .fermer:hover:not(:disabled) { background: none; }
+
+@media (max-width: 600px) {
+  .carte { padding: 1rem; border-radius: var(--r-md); }
+  .barre { grid-template-columns: 6.5rem 1fr 3.5rem; font-size: .85rem; }
+  .gros-chiffre { font-size: 1.6rem; }
+  .kpis { grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr)); gap: .35rem; }
+  .kpi { padding: .4rem .5rem; }
+  .kpi strong { font-size: 1.05rem; }
+  .kpi span { font-size: .72rem; }
+  .defi { flex-direction: column; align-items: flex-start; gap: .5rem; }
+  /* Gros boutons au stand : plus faciles à toucher. */
+  .compteur button { padding: .55rem .9rem; }
+}
+
+/* Tableau des quantités du jour : compact, sans défilement. */
+table.quantites td { vertical-align: middle; }
+table.quantites strong { display: block; }
+button.lien { background: none; border: none; color: var(--ink); text-decoration: underline; padding: 0; font-weight: 600; font-size: .8rem; margin-top: .2rem; }
+button.lien:hover:not(:disabled) { background: none; color: var(--brand-strong); }
+@media (max-width: 600px) {
+  table.quantites { font-size: .85rem; }
+  table.quantites th, table.quantites td { padding: .5rem .2rem; }
+  table.quantites .compteur { gap: .25rem; }
+  table.quantites .compteur button { padding: .5rem .6rem; }
+}
+
+/* ---------- Message du site : aperçu du bandeau (même rendu que frontend/src/components/Annonce.module.css) ---------- */
+.bandeau { display: flex; align-items: flex-start; gap: .7rem; padding: .75rem 1rem; border-radius: var(--r-sm); border-left: 5px solid var(--eco); background: var(--eco-tint); color: var(--ink); }
+.bandeau p { margin: 0; overflow-wrap: anywhere; }
+.bandeau .pictogramme { flex: none; display: inline-grid; place-items: center; width: 1.4rem; height: 1.4rem; border-radius: 50%; background: var(--eco); color: var(--surface); font-weight: 800; font-size: .85rem; line-height: 1; }
+.bandeau.ATTENTION { border-left-color: var(--warning); background: var(--warning-tint); }
+.bandeau.ATTENTION .pictogramme { background: var(--warning); }
+.bandeau.IMPORTANT { border-left-color: var(--danger); background: var(--danger-tint); }
+.bandeau.IMPORTANT .pictogramme { background: var(--danger); }
+.carte > small.aide { display: block; color: var(--muted); font-size: .8rem; margin-top: .2rem; text-align: right; }

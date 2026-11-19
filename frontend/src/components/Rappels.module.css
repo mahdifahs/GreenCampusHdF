@@ -1,0 +1,30 @@
+.carte p {
+  color: var(--muted);
+}
+
+.titre {
+  font-size: 1.1rem;
+}
+
+.ligne {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+.actif {
+  color: var(--eco);
+  font-weight: 600;
+}
+
+.note {
+  font-size: 0.9rem;
+}
+
+.carte .erreur {
+  color: var(--danger);
+  background: var(--danger-tint);
+  border-radius: var(--r-sm);
+  padding: var(--sp-3);
+}

@@ -1,0 +1,41 @@
+.page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-5) var(--sp-4);
+}
+
+.carte {
+  max-width: 30rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.marque {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+.marque span {
+  color: var(--logo);
+}
+
+.carte h1 {
+  font-size: clamp(1.8rem, 6vw, 2.4rem);
+}
+
+.carte p {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.carte .marque {
+  color: var(--ink);
+}
+
+.carte .note {
+  font-size: 0.9rem;
+}

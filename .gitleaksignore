@@ -1,0 +1,11 @@
+# Faux positifs connus de gitleaks (vérifiés lors de l'audit de sécurité du 11/11/2026).
+# Chaque ligne ignore UNE détection précise (commit:fichier:règle:ligne), pas un fichier entier :
+# un vrai secret ajouté ailleurs, ou plus tard dans ces fichiers, reste signalé par la CI.
+# Secrets factices utilisés par les tests de configuration (refus du secret d'exemple, etc.).
+bb748340cf874b02ebedf58948e55f9406079835:backend/test/securite.test.ts:generic-api-key:16
+bb748340cf874b02ebedf58948e55f9406079835:backend/test/securite.test.ts:generic-api-key:48
+# Valeur d'exemple de JWT_SECRET, refusée au démarrage en production par config.ts.
+819177a4cdd2c737dd4aa1d8ab7727e378bc4d57:backend/.env.example:generic-api-key:4
+# Secrets factices du test de changement de JWT_SECRET (backend/test/rotation-jwt.test.ts, 12/11/2026).
+d395c01eae5c81fa0d2e0be2dcd06596529a1206:backend/test/rotation-jwt.test.ts:generic-api-key:13
+d395c01eae5c81fa0d2e0be2dcd06596529a1206:backend/test/rotation-jwt.test.ts:generic-api-key:14

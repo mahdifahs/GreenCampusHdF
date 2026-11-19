@@ -1,0 +1,79 @@
+.tuiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--sp-3);
+}
+.tuile {
+  text-align: center;
+}
+.tuile strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+}
+.tuile span {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.erreur {
+  color: var(--danger);
+  background: var(--danger-tint);
+  border-radius: var(--r-sm);
+  padding: var(--sp-3);
+}
+
+.liste {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+}
+
+.carteEngagement {
+  gap: var(--sp-2);
+}
+
+.enteteCarte {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.gain {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--brand-strong);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin-top: var(--sp-2);
+}
+
+.confirmation {
+  margin-top: var(--sp-2);
+  padding: var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+}
+
+.confirmation p {
+  font-weight: 600;
+}
+
+.retirer {
+  background: none;
+  border: none;
+  color: var(--muted);
+  text-decoration: underline;
+  font-size: 0.85rem;
+}
+
+.attente {
+  font-size: 0.85rem;
+  color: var(--muted);
+}

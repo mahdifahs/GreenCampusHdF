@@ -1,0 +1,106 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-4) max(1rem, env(safe-area-inset-left, 0px));
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.wordmark {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.icone {
+  border-radius: 22%;
+  flex: none;
+}
+
+.session {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  column-gap: var(--sp-3);
+  row-gap: var(--sp-1);
+  min-width: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.pseudo {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+.pseudo:hover {
+  text-decoration: underline;
+}
+
+.deconnexion {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--muted);
+  text-decoration: underline;
+  font-size: 0.85rem;
+}
+
+.connexion {
+  color: var(--muted);
+  text-decoration: underline;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.nav {
+  display: flex;
+  gap: var(--sp-2);
+  padding: var(--sp-3) max(1rem, env(safe-area-inset-left, 0px));
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  /* Défilement au doigt conservé, sans la barre grise de Windows sous les onglets. */
+  scrollbar-width: none;
+}
+.nav::-webkit-scrollbar {
+  display: none;
+}
+
+.lien {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+}
+
+.actif {
+  color: var(--brand-strong);
+  background: var(--eco-tint);
+}
+
+.footer {
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-4);
+  padding: var(--sp-5) max(1rem, env(safe-area-inset-left, 0px));
+}
+.footer a {
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-decoration: underline;
+}

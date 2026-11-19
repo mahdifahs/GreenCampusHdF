@@ -1,0 +1,11 @@
+{
+  // Compile le seed (filières, défis, vêtements, premier super-admin) dans dist/seed/ pour qu'il
+  // tourne dans l'image de production, où tsx n'est pas installé : node dist/seed/seed.js
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "prisma",
+    "outDir": "dist/seed",
+    "sourceMap": false
+  },
+  "include": ["prisma/*.ts"]
+}

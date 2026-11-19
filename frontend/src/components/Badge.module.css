@@ -1,0 +1,32 @@
+.badge {
+  display: inline-flex;
+  /* Dans une carte (flex en colonne), un badge garde la largeur de son texte au lieu de s'étirer. */
+  align-self: flex-start;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: var(--r-pill);
+  padding: 0.3rem 0.8rem;
+  white-space: nowrap;
+}
+
+.eco {
+  background: var(--eco-tint);
+  color: var(--eco);
+}
+
+.pop {
+  background: var(--pop);
+  color: var(--pop-ink);
+}
+
+.neutral {
+  background: var(--surface-sunken);
+  color: var(--muted);
+}
+
+.alerte {
+  background: var(--danger-tint);
+  color: var(--danger);
+}

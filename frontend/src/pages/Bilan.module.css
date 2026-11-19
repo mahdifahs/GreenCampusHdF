@@ -1,0 +1,122 @@
+.repartition {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+}
+.ligneCategorie {
+  display: grid;
+  grid-template-columns: 8rem 1fr 4.5rem;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.nomCategorie {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.piste {
+  height: 10px;
+  background: var(--surface-sunken);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.remplissage {
+  height: 100%;
+  background: var(--eco);
+  border-radius: var(--r-pill);
+}
+.valeurCategorie {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  text-align: right;
+  /* « 1 997 kg » sur une seule ligne, même sur un petit écran. */
+  white-space: nowrap;
+}
+
+.erreur {
+  color: var(--danger);
+  background: var(--danger-tint);
+  border-radius: var(--r-sm);
+  padding: var(--sp-3);
+}
+
+.questions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+}
+.champ {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.label {
+  font-size: 0.9rem;
+}
+.input {
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 0.6rem 0.8rem;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  width: 100%;
+}
+.input:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+.nombreAvecUnite {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.nombreAvecUnite .input {
+  flex: 1;
+}
+.unite {
+  font-size: 0.82rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Reste visible en bas de l'écran pendant toute la saisie. */
+.bandeau {
+  position: sticky;
+  bottom: var(--sp-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-md);
+  z-index: 1;
+}
+.estimation {
+  display: flex;
+  flex-direction: column;
+}
+.estimation span {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.estimation strong {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+}
+.actions {
+  display: flex;
+  gap: var(--sp-3);
+}
+
+@media (max-width: 480px) {
+  .ligneCategorie {
+    /* Dernière colonne de largeur fixe (assez pour « 10 000 kg ») : les barres restent alignées d'une ligne à l'autre. */
+    grid-template-columns: 5.5rem 1fr 4.6rem;
+    gap: var(--sp-2);
+  }
+}

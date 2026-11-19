@@ -1,0 +1,72 @@
+/* Bandeau d'information (même rendu que l'aperçu de l'admin, backend/admin/style.css « .bandeau »).
+   Le texte reste en --ink sur un fond teinté : la couleur ne porte jamais seule le sens,
+   le libellé (Info / Attention / Important) le dit aussi. */
+
+.bandeau {
+  background: var(--eco-tint);
+  border-bottom: 1px solid var(--border);
+  box-shadow: inset 5px 0 0 var(--eco);
+  color: var(--ink);
+}
+
+.contenu {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  max-width: 640px;
+  margin-inline: auto;
+  padding: var(--sp-3) max(1rem, env(safe-area-inset-right, 0px)) var(--sp-3) max(1rem, env(safe-area-inset-left, 0px));
+}
+
+.pictogramme {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  margin-top: 0.05rem;
+  border-radius: 50%;
+  background: var(--eco);
+  color: var(--surface);
+  font-weight: 800;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.texte {
+  flex: 1;
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.fermer {
+  flex: none;
+  background: none;
+  border: none;
+  padding: 0 var(--sp-1);
+  color: var(--muted);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.fermer:hover {
+  color: var(--ink);
+}
+
+.ATTENTION {
+  background: var(--warning-tint);
+  box-shadow: inset 5px 0 0 var(--warning);
+}
+.ATTENTION .pictogramme {
+  background: var(--warning);
+}
+
+.IMPORTANT {
+  background: var(--danger-tint);
+  box-shadow: inset 5px 0 0 var(--danger);
+}
+.IMPORTANT .pictogramme {
+  background: var(--danger);
+}

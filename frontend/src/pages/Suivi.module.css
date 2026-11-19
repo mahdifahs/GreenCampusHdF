@@ -1,0 +1,65 @@
+.questions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+}
+
+.champ {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: 0.95rem;
+}
+
+.select {
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 0.6rem 0.8rem;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  width: 100%;
+}
+.select:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+
+.echelle {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.cran {
+  flex: 1;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0.6rem 0;
+  font-weight: 600;
+}
+.cranActif {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--sur-brand);
+}
+
+.legendeEchelle {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.erreur {
+  color: var(--danger);
+  background: var(--danger-tint);
+  border-radius: var(--r-sm);
+  padding: var(--sp-3);
+  margin-top: var(--sp-3);
+}

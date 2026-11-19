@@ -1,0 +1,118 @@
+.retour {
+  display: inline-block;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.retour:hover {
+  color: var(--ink);
+}
+
+.centre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: var(--sp-5);
+}
+
+.onglets {
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: var(--sp-5);
+}
+.onglets button {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--muted);
+  background: var(--surface-sunken);
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 0.5rem 1rem;
+}
+.onglets .actif {
+  background: var(--brand);
+  color: var(--sur-brand);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-top: var(--sp-5);
+  width: 100%;
+  max-width: 24rem;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.select {
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 0.6rem 0.8rem;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.consentement {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.consentement input {
+  margin-top: 0.2rem;
+}
+
+.erreur {
+  color: var(--danger);
+  background: var(--danger-tint);
+  border-radius: var(--r-sm);
+  padding: var(--sp-3);
+  margin-top: var(--sp-4);
+  width: 100%;
+  max-width: 24rem;
+}
+
+.qr {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.qr img {
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  /* Blanc fixe, même en mode sombre : un QR code sur fond foncé se scanne mal. */
+  background: #fff;
+}
+
+.qr p {
+  flex: 1 1 12rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.code {
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  letter-spacing: 0.08em;
+  background: var(--eco-tint);
+  color: var(--eco);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-sm);
+  display: inline-block;
+}
+
+.icone {
+  border-radius: 22%;
+  margin-bottom: var(--sp-3);
+  box-shadow: 0 8px 22px rgb(15 77 59 / 0.25);
+}

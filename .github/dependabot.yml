@@ -1,0 +1,52 @@
+# Mises à jour automatiques des dépendances (OWASP A03 : chaîne d'approvisionnement).
+# Dependabot ouvre une pull request par lot de mises à jour ; la CI doit passer avant toute fusion.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      mineures:
+        update-types: [minor, patch]
+    ignore:
+      # Version figée en 4.10.4 : la 4.18 a renommé toutes les actions des 22 défis (prisma/defis.ts)
+      # malgré un numéro mineur, et même le correctif 4.10.5 exige Node 24 (la CI et l'image sont en
+      # Node 22). Toute montée se fait à la main : défis remappés, gains revus, npm ci sous Node 22.
+      - dependency-name: "@incubateur-ademe/nosgestesclimat"
+      # Prisma 7 = vraie migration (prisma.config.ts, pilote @prisma/adapter-pg, nouveau générateur) :
+      # écartée pour la durée du projet (décision du 12/11/2026), Prisma 6 reste maintenu.
+      - dependency-name: "prisma"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@prisma/client"
+        update-types: ["version-update:semver-major"]
+      # web-push 4 (sortie le 06/11/2026) passe le paquet en ESM et réécrit le code : reportée après
+      # l'évènement (décision du 12/11/2026). La 3.6.7 est vérifiée sur un vrai téléphone et sans faille
+      # connue. Une montée se teste à la main : npm test, puis vraie notification reçue sur un téléphone.
+      - dependency-name: "web-push"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      mineures:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: /backend
+    schedule:
+      interval: weekly
+    ignore:
+      # On reste sur Node 22 (maintenu jusqu'en avril 2027, même version que la CI) : pas de
+      # changement de version majeure de l'image, et surtout pas de version impaire (non LTS).
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]

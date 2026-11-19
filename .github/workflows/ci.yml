@@ -1,0 +1,157 @@
+# Intégration continue : tests, vérification des types, audit des dépendances et construction.
+# Les actions sont épinglées par empreinte de commit (SHA) et non par tag, qui peut être déplacé
+# (OWASP A03 et A08 : chaîne d'approvisionnement et intégrité). Dependabot les met à jour.
+name: CI
+
+on:
+  push:
+    branches: [main, securite]
+  pull_request:
+    branches: [main]
+
+# Droits minimaux : le workflow ne fait que lire le dépôt.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (tests, types, audit)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: greencampus
+          POSTGRES_PASSWORD: greencampus
+          POSTGRES_DB: greencampus_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U greencampus"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://greencampus:greencampus@localhost:5432/greencampus_test
+      # Prisma lit DATABASE_URL pour générer le client ; les tests utilisent TEST_DATABASE_URL.
+      DATABASE_URL: postgresql://greencampus:greencampus@localhost:5432/greencampus_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run typecheck
+      - run: npm test
+      # Échoue sur toute vulnérabilité « high » ou plus, sauf exception datée et justifiée
+      # dans .github/audit-exceptions.json (npm audit ne sait pas ignorer une alerte précise).
+      - name: Audit des dépendances (échoue sur une vulnérabilité « high » ou plus)
+        run: node ../.github/scripts/audit.mjs
+      - run: npm run build
+
+  frontend:
+    name: Frontend (lint, build, audit)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      # Échoue sur toute vulnérabilité « high » ou plus, sauf exception datée et justifiée
+      # dans .github/audit-exceptions.json (npm audit ne sait pas ignorer une alerte précise).
+      - name: Audit des dépendances (échoue sur une vulnérabilité « high » ou plus)
+        run: node ../.github/scripts/audit.mjs
+      - run: npm run build
+
+  e2e:
+    name: Parcours de bout en bout (Playwright)
+    runs-on: ubuntu-latest
+    # Vraie API (sources) sur une base dédiée, front construit et servi par vite preview, Chromium.
+    # Détail et lancement en local : frontend/e2e/README.md.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: greencampus
+          POSTGRES_PASSWORD: greencampus
+          POSTGRES_DB: greencampus_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U greencampus"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      E2E_DATABASE_URL: postgresql://greencampus:greencampus@localhost:5432/greencampus_e2e
+      # Prisma lit DATABASE_URL pour générer le client.
+      DATABASE_URL: postgresql://greencampus:greencampus@localhost:5432/greencampus_e2e
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+      - name: Dépendances du backend
+        working-directory: backend
+        run: npm ci && npx prisma generate
+      - name: Dépendances du frontend et navigateur Chromium
+        working-directory: frontend
+        run: npm ci && npx playwright install --with-deps chromium
+      - name: Parcours
+        working-directory: frontend
+        run: npm run test:e2e
+
+  docker:
+    name: Image Docker de production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Construction de l'image
+        run: docker build -t greencampus-backend:ci backend
+
+  secrets:
+    name: Secrets (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Tout l'historique : un secret supprimé dans un commit suivant reste lisible dans git.
+          fetch-depth: 0
+          persist-credentials: false
+      # Remplace la détection de secrets de GitHub (payante pour un dépôt privé). Image épinglée par
+      # empreinte (v8.28.0, même version que l'audit) : Dependabot ne la suit pas, à mettre à jour à la main.
+      # Les faux positifs connus sont listés dans .gitleaksignore ; en cas d'alerte, voir SECURITY.md.
+      - name: Recherche de secrets dans tout l'historique
+        run: >-
+          docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/repo"
+          zricethezav/gitleaks@sha256:cdbb7c955abce02001a9f6c9f602fb195b7fadc1e812065883f695d1eeaba854
+          git /repo --redact --no-banner --verbose

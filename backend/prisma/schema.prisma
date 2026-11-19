@@ -1,0 +1,337 @@
+// Modèle de données GreenCampus HdF.
+// Aucune donnée personnelle : un participant n'est identifié que par un pseudo et un code de récupération aléatoires.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Annee {
+  L1
+  L2
+  L3
+  BUT1
+  BUT2
+  BUT3
+  M1
+  M2
+  INGE1
+  INGE2
+  INGE3
+  INGE4
+  INGE5
+  DOCTORAT
+  AUTRE
+}
+
+model Filiere {
+  id           Int           @id @default(autoincrement())
+  slug         String        @unique
+  libelle      String
+  participants Participant[]
+}
+
+model Participant {
+  id              String           @id @default(uuid()) @db.Uuid
+  pseudo          String           @unique
+  // Code de récupération = sélecteur (stocké en clair, sert à retrouver la ligne) + vérificateur (haché avec argon2).
+  codeSelecteur   String           @unique
+  codeVerifHash   String
+  filiereId       Int
+  filiere         Filiere          @relation(fields: [filiereId], references: [id])
+  annee           Annee
+  consentementAt  DateTime
+  createdAt       DateTime         @default(now())
+  lastSeenAt      DateTime         @default(now())
+  // Modération : exclu = ne compte plus dans les statistiques publiques ; bloque = ne peut plus utiliser l'application.
+  exclu           Boolean          @default(false)
+  bloque          Boolean          @default(false)
+  bilans          Bilan[]
+  engagements     Engagement[]
+  suivis          Suivi[]
+  pushAbonnements PushAbonnement[]
+  relances        Relance[]
+  sessions        Session[]
+
+  @@index([filiereId])
+}
+
+enum TypeBilan {
+  STAND
+  COMPLET
+}
+
+model Bilan {
+  id            String      @id @default(uuid()) @db.Uuid
+  participantId String      @db.Uuid
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  type          TypeBilan
+  // Réponses au questionnaire Nos Gestes Climat (situation publicodes).
+  situation     Json
+  // Résultats recalculés côté serveur, en kg CO2e par an.
+  totalKg       Float
+  parCategorie  Json
+  createdAt     DateTime    @default(now())
+
+  @@index([participantId, createdAt])
+}
+
+enum CategorieDefi {
+  TRANSPORT
+  ALIMENTATION
+  LOGEMENT
+  DIVERS
+  NUMERIQUE
+}
+
+model Defi {
+  id          Int           @id @default(autoincrement())
+  slug        String        @unique
+  titre       String
+  description String
+  categorie   CategorieDefi
+  // Action du modèle Nos Gestes Climat (ADEME) qui fournit le gain de CO2, personnalisé selon le bilan.
+  actionNgc   String        @unique
+  actif       Boolean       @default(true)
+  engagements Engagement[]
+}
+
+enum StatutEngagement {
+  EN_COURS
+  VALIDE
+  NON_TENU
+}
+
+model Engagement {
+  id                String           @id @default(uuid()) @db.Uuid
+  participantId     String           @db.Uuid
+  participant       Participant      @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  defiId            Int
+  defi              Defi             @relation(fields: [defiId], references: [id])
+  // Lundi de la semaine du défi.
+  semaine           DateTime         @db.Date
+  // Gain estimé au moment de l'engagement (kg CO2e), figé pour que les statistiques restent stables.
+  co2EviteKgSemaine Float
+  statut            StatutEngagement @default(EN_COURS)
+  createdAt         DateTime         @default(now())
+  reponduAt         DateTime?
+
+  @@unique([participantId, defiId, semaine])
+  @@index([defiId])
+}
+
+enum EtapeSuivi {
+  J7
+  J14
+}
+
+model Suivi {
+  id            String      @id @default(uuid()) @db.Uuid
+  participantId String      @db.Uuid
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  etape         EtapeSuivi
+  reponses      Json
+  createdAt     DateTime    @default(now())
+
+  @@unique([participantId, etape])
+}
+
+model PushAbonnement {
+  id            String      @id @default(uuid()) @db.Uuid
+  participantId String      @db.Uuid
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  endpoint      String      @unique
+  p256dh        String
+  auth          String
+  createdAt     DateTime    @default(now())
+}
+
+// Notification de relance déjà envoyée (une seule par étape et par participant).
+model Relance {
+  id            String      @id @default(uuid()) @db.Uuid
+  participantId String      @db.Uuid
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  etape         EtapeSuivi
+  envoyeeAt     DateTime    @default(now())
+
+  @@unique([participantId, etape])
+}
+
+// Réponse anonyme au quiz du stand (aucun lien avec un participant) : sert aux statistiques de la vidéo.
+model QuizReponse {
+  id         String   @id @default(uuid()) @db.Uuid
+  // Les réponses d'une même partie partagent cet identifiant aléatoire.
+  partie     String   @db.Uuid
+  questionId String
+  choix      String
+  correct    Boolean
+  createdAt  DateTime @default(now())
+
+  @@index([questionId])
+}
+
+// Journal des actions de l'équipe dans l'administration (qui a fait quoi, quand).
+model ActionAdmin {
+  id        String   @id @default(uuid()) @db.Uuid
+  auteur    String
+  action    String
+  cible     String
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// Compteurs manuels saisis par l'équipe sur le stand (jour J), un enregistrement par journée d'événement.
+model CompteurJour {
+  date            DateTime @id @db.Date
+  personnesVenues Int      @default(0)
+  updatedAt       DateTime @updatedAt
+}
+
+// Référentiel admin-gérable des types de vêtements (T-shirt, Jean, ...). poidsMoyenGrammes sert
+// à convertir une quantité en kg pour le bilan CO2 — vide tant que l'équipe ne l'a pas renseigné
+// (valeur sourcée, voir CLAUDE.md), jamais inventé.
+model TypeVetement {
+  id                Int                @id @default(autoincrement())
+  nom               String             @unique
+  poidsMoyenGrammes Int?
+  actif             Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  quantites         QuantiteVetement[]
+}
+
+// Référentiel admin-gérable des matières (coton, polyester, ...). facteurEmissionKgCo2ParKg sert
+// au bilan CO2 (kg CO2e par kg de matière) — vide tant que l'équipe ne l'a pas renseigné, avec
+// sa source tracée pour rester vérifiable.
+model Matiere {
+  id                        Int                @id @default(autoincrement())
+  nom                       String             @unique
+  facteurEmissionKgCo2ParKg Float?
+  source                    String?
+  actif                     Boolean            @default(true)
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
+  quantites                 QuantiteVetement[]
+}
+
+// Quantités de vêtements récupérés/donnés, par journée × type × matière (jour de récolte et
+// jour de don sont deux dates distinctes du même modèle). Remplace les anciens compteurs plats
+// vetementsRecuperes/vetementsDonnes de CompteurJour.
+model QuantiteVetement {
+  date       DateTime     @db.Date
+  typeId     Int
+  matiereId  Int
+  recuperes  Int          @default(0)
+  donnes     Int          @default(0)
+  updatedAt  DateTime     @updatedAt
+  type       TypeVetement @relation(fields: [typeId], references: [id])
+  matiere    Matiere      @relation(fields: [matiereId], references: [id])
+
+  @@id([date, typeId, matiereId])
+}
+
+enum RoleAdmin {
+  ADMIN
+  SUPER_ADMIN
+  // Saisie au stand seulement (Jour J et quantités de vêtements), voir modules/admin/routes.ts.
+  BENEVOLE
+}
+
+// Compte admin nominatif (prénom + mot de passe généré, voir lib/mot-de-passe.ts). Remplace l'ancien
+// mot de passe unique partagé. Un SUPER_ADMIN peut créer/bloquer/réinitialiser/supprimer les autres
+// comptes (modules/admin/comptes.ts) ; au moins un SUPER_ADMIN actif doit toujours subsister.
+model CompteAdmin {
+  id                  String    @id @default(uuid()) @db.Uuid
+  prenom              String    @unique
+  motDePasseHash      String
+  role                RoleAdmin @default(ADMIN)
+  bloque              Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  derniereConnexionAt DateTime?
+  sessions            Session[]
+}
+
+// Sessions ouvertes (participant OU compte admin, jamais les deux : contrainte CHECK dans la
+// migration). L'id est repris dans le jeton (jti) : se déconnecter supprime la ligne, et le jeton,
+// même copié, ne vaut plus rien. Aucune donnée d'identification (ni IP ni navigateur).
+// Lignes expirées purgées automatiquement.
+model Session {
+  id            String       @id @default(uuid()) @db.Uuid
+  participantId String?      @db.Uuid
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  compteAdminId String?      @db.Uuid
+  compteAdmin   CompteAdmin? @relation(fields: [compteAdminId], references: [id], onDelete: Cascade)
+  createdAt     DateTime     @default(now())
+  expiresAt     DateTime
+
+  @@index([participantId])
+  @@index([compteAdminId])
+  @@index([expiresAt])
+}
+
+// Journal des événements de sécurité (OWASP A09). Contient des adresses IP : conservé 30 jours au plus.
+model EvenementSecurite {
+  id        String   @id @default(uuid()) @db.Uuid
+  type      String
+  niveau    String
+  ip        String?
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([type, createdAt])
+}
+
+enum StatutEvenement {
+  BROUILLON
+  PUBLIE
+}
+
+// Évènements affichés sur la page d'accueil publique (dates du/des événements campus).
+// Un brouillon n'est visible que dans l'administration, jamais sur la page publique.
+model Evenement {
+  id          String          @id @default(uuid()) @db.Uuid
+  titre       String
+  description String?
+  lieu        String?
+  dateDebut   DateTime
+  dateFin     DateTime?
+  statut      StatutEvenement @default(BROUILLON)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([statut, dateDebut])
+}
+
+// Mode maintenance (une seule ligne, id = 1), basculé depuis l'admin sans redémarrer l'API.
+// Tant qu'il est actif, l'API publique et participant répond 503 ; l'admin reste accessible.
+model Maintenance {
+  id     Int       @id @default(1)
+  actif  Boolean   @default(false)
+  depuis DateTime?
+  par    String?
+}
+
+enum NiveauAnnonce {
+  INFO
+  ATTENTION
+  IMPORTANT
+}
+
+// Message d'information affiché en bandeau sur tout le site public (une seule ligne, id = 1 :
+// un seul message à la fois). Publié ou retiré depuis l'admin, disparaît seul après `fin`.
+model Annonce {
+  id        Int           @id @default(1)
+  texte     String
+  niveau    NiveauAnnonce @default(INFO)
+  publiee   Boolean       @default(false)
+  fin       DateTime?
+  par       String?
+  updatedAt DateTime      @updatedAt
+}

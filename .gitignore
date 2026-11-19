@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+*.log
+coverage/
+CLAUDE.md
+backend/scripts/reset-admin.ts
+AUDIT_CONSTATS.md
+backend/scripts/audit-manuel.mts

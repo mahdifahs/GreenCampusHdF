@@ -1,0 +1,33 @@
+.btn {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1rem;
+  border-radius: var(--r-pill);
+  padding: 0.7rem 1.4rem;
+  border: 2px solid transparent;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.primary {
+  background: var(--brand);
+  color: var(--sur-brand);
+}
+.primary:hover:not(:disabled) {
+  background: var(--brand-strong);
+}
+
+.secondary {
+  background: transparent;
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.secondary:hover:not(:disabled) {
+  background: var(--surface-sunken);
+}

@@ -1,0 +1,11 @@
+.mention {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.mention a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}

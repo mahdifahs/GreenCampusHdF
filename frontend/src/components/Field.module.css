@@ -1,0 +1,32 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.input {
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 0.6rem 0.8rem;
+  background: var(--surface);
+  color: var(--ink);
+  width: 100%;
+}
+.input:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+.input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.error {
+  font-size: 0.8rem;
+  color: var(--danger);
+}
