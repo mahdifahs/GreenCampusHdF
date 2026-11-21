@@ -83,7 +83,11 @@ header button { background: none; border: none; color: var(--muted); text-decora
 #session { display: flex; align-items: center; gap: .9rem; font-size: .85rem; color: var(--muted); }
 .badge { font-size: .75rem; font-weight: 600; background: var(--eco-tint); color: var(--eco); padding: 3px 10px; border-radius: var(--r-pill); margin-left: .5rem; }
 
-nav { display: flex; gap: .3rem; padding: .75rem max(1rem, env(safe-area-inset-left, 0px)) 0; border-bottom: 1px solid var(--border); overflow-x: auto; background: var(--surface); }
+/* Navigation : tous les onglets visibles sur PC (retour à la ligne, jamais de défilement horizontal),
+   bouton « Menu » sur téléphone (voir la media query plus bas). */
+nav { position: relative; padding: .6rem max(1rem, env(safe-area-inset-left, 0px)); border-bottom: 1px solid var(--border); background: var(--surface); }
+.liste-onglets { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .3rem; }
+nav .menu-bouton { display: none; }
 nav button { font-weight: 600; border: none; border-radius: var(--r-pill); background: none; color: var(--muted); padding: .5rem 1rem; white-space: nowrap; }
 nav button.actif { color: var(--brand-strong); background: var(--eco-tint); }
 /* Les onglets ne sont pas des boutons d'action : on désactive explicitement le style de survol
@@ -296,3 +300,34 @@ button.lien:hover:not(:disabled) { background: none; color: var(--brand-strong);
 .bandeau.IMPORTANT { border-left-color: var(--danger); background: var(--danger-tint); }
 .bandeau.IMPORTANT .pictogramme { background: var(--danger); }
 .carte > small.aide { display: block; color: var(--muted); font-size: .8rem; margin-top: .2rem; text-align: right; }
+
+/* Questionnaire du bilan. [hidden] doit l'emporter sur les display des classes (.grille…). */
+[hidden] { display: none !important; }
+.ligne-recherche { display: flex; gap: .5rem; }
+.ligne-recherche input { flex: 1; }
+.ligne-recherche button { white-space: nowrap; }
+tr.inactive td { color: var(--muted); }
+.actions-ligne { display: flex; flex-wrap: wrap; gap: .3rem; justify-content: flex-end; min-width: 12rem; }
+.carte > .bascule { margin: .4rem 0 .6rem; }
+
+/* Navigation sur téléphone : bouton « Menu · page courante », liste déroulante en dessous. */
+@media (max-width: 760px) {
+  nav .menu-bouton,
+  nav .menu-bouton:hover:not(:disabled) {
+    display: inline-flex; align-items: center; gap: .5rem; max-width: 100%;
+    background: var(--surface); color: var(--ink); border: 1.5px solid var(--border); padding: .55rem 1rem;
+  }
+  nav .menu-bouton:hover:not(:disabled) { border-color: var(--ink); }
+  nav .menu-icone { font-size: 1.1rem; line-height: 1; }
+  nav .menu-courant { color: var(--brand-strong); overflow: hidden; text-overflow: ellipsis; }
+  nav .menu-separateur { color: var(--muted); }
+  nav .liste-onglets {
+    display: none; position: absolute; z-index: 20; top: calc(100% - .3rem);
+    left: max(1rem, env(safe-area-inset-left, 0px)); right: max(1rem, env(safe-area-inset-right, 0px));
+    flex-direction: column; gap: .15rem; padding: .4rem;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md);
+    box-shadow: 0 10px 30px rgb(22 38 30 / .18);
+  }
+  nav.ouvert .liste-onglets { display: flex; }
+  nav .liste-onglets button { width: 100%; text-align: left; padding: .75rem 1rem; border-radius: var(--r-sm); }
+}

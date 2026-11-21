@@ -120,3 +120,31 @@
     gap: var(--sp-2);
   }
 }
+
+.aideErreur {
+  font-size: 0.82rem;
+  color: var(--danger);
+  font-weight: 600;
+}
+.compteur,
+.compteurErreur {
+  font-size: 0.82rem;
+  margin-top: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  color: var(--muted);
+}
+.compteurErreur {
+  background: var(--danger-tint);
+  color: var(--danger);
+  font-weight: 600;
+}
+.input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+.aideCarte {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: var(--sp-2);
+}

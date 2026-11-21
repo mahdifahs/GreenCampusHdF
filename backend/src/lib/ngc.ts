@@ -12,6 +12,8 @@ type RegleBrute = {
   unité?: string;
   mosaique?: unknown;
   'une possibilité'?: string[];
+  plancher?: number;
+  plafond?: number;
 };
 
 export const CATEGORIES = {
@@ -36,7 +38,12 @@ export type Question = {
   type: TypeQuestion;
   unite: string | null;
   possibilites: { valeur: string; titre: string }[];
+  // Bornes d'une question « nombre » (plancher/plafond du modèle, ou bornes du projet). null sinon.
+  min: number | null;
+  max: number | null;
 };
+
+export type Bornes = { min: number | null; max: number | null };
 
 export type ResultatBilan = {
   totalKg: number;
@@ -50,7 +57,25 @@ export class ErreurSituation extends Error {
   }
 }
 
-const VALEUR_MAX = 10_000_000;
+export const VALEUR_MAX = 10_000_000;
+
+// Bornes ajoutées par le projet quand le modèle n'en donne pas (sinon « 500 h de bus par semaine » passait).
+const BORNES_PROJET: Record<string, { min?: number; max?: number }> = {
+  'transport . transports commun . bus . heures par semaine': { max: 40 },
+  'transport . transports commun . métro ou tram . heures par semaine': { max: 40 },
+};
+
+// Les plats se comptent sur 14 repas par semaine (midi et soir), comme les suggestions du modèle.
+// Chaque plat est borné à 21 par le modèle, mais leur total ne l'est pas : on le plafonne.
+export const QUESTIONS_PLATS = [
+  'alimentation . plats . végétalien . nombre',
+  'alimentation . plats . végétarien . nombre',
+  'alimentation . plats . viande blanche . nombre',
+  'alimentation . plats . viande rouge . nombre',
+  'alimentation . plats . poisson gras . nombre',
+  'alimentation . plats . poisson blanc . nombre',
+];
+export const REPAS_MAX_SEMAINE = 14;
 
 export class ModeleNgc {
   private regles: Record<string, RegleBrute>;
@@ -74,6 +99,7 @@ export class ModeleNgc {
     let type: TypeQuestion = 'oui-non';
     if (options) type = 'choix';
     else if (regle.unité || typeof this.engine.evaluate(dottedName).nodeValue === 'number') type = 'nombre';
+    const projet = BORNES_PROJET[dottedName] ?? {};
     return {
       dottedName,
       question: regle.question!,
@@ -90,11 +116,27 @@ export class ModeleNgc {
               valeur,
               titre: this.regles[`${dottedName} . ${valeur}`]?.titre ?? valeur,
             })),
+      min: type === 'nombre' ? Math.max(0, projet.min ?? regle.plancher ?? 0) : null,
+      max: type === 'nombre' ? Math.min(VALEUR_MAX, projet.max ?? regle.plafond ?? VALEUR_MAX) : null,
     };
   }
 
   question(dottedName: string): Question | undefined {
     return this.questions.get(dottedName);
+  }
+
+  toutesQuestions(): IterableIterator<Question> {
+    return this.questions.values();
+  }
+
+  // Limites strictes du modèle (plancher/plafond) : les bornes réglées dans l'administration doivent
+  // rester à l'intérieur. Sans plafond dans le modèle, VALEUR_MAX (les bornes du projet sont un réglage
+  // par défaut, pas une limite).
+  limitesModele(dottedName: string): { min: number; max: number } | null {
+    const q = this.questions.get(dottedName);
+    if (q?.type !== 'nombre') return null;
+    const regle = this.regles[dottedName];
+    return { min: Math.max(0, regle.plancher ?? 0), max: Math.min(VALEUR_MAX, regle.plafond ?? VALEUR_MAX) };
   }
 
   titre(dottedName: string): string | undefined {
@@ -104,34 +146,46 @@ export class ModeleNgc {
   // Une situation venant du client n'est jamais passée telle quelle au moteur : en publicodes, une chaîne est
   // une expression (elle pourrait référencer d'autres règles). On n'accepte donc que des questions connues,
   // avec des nombres, oui/non, ou une des possibilités prévues par le modèle.
-  validerSituation(brute: Record<string, ValeurReponse>): Situation {
+  // `bornes` remplace, question par question, les bornes par défaut (réglages du questionnaire admin).
+  validerSituation(brute: Record<string, ValeurReponse>, bornes?: ReadonlyMap<string, Bornes>): Situation {
     const situation: Situation = {};
     const erreurs: { champ: string; message: string }[] = [];
     for (const [cle, valeur] of Object.entries(brute)) {
       const q = this.questions.get(cle);
-      const normalisee = q ? this.normaliser(q, valeur) : undefined;
-      if (!q) erreurs.push({ champ: cle, message: 'Question inconnue du modèle Nos Gestes Climat.' });
-      else if (normalisee === undefined) erreurs.push({ champ: cle, message: this.messageType(q) });
+      const b = (q && bornes?.get(cle)) ?? q;
+      const normalisee = q && b ? this.normaliser(q, valeur, b) : undefined;
+      if (!q || !b) erreurs.push({ champ: cle, message: 'Question inconnue du modèle Nos Gestes Climat.' });
+      else if (normalisee === undefined) erreurs.push({ champ: cle, message: this.messageType(q, b) });
       else situation[cle] = normalisee;
+    }
+    const repas = QUESTIONS_PLATS.reduce((somme, q) => somme + (typeof situation[q] === 'number' ? (situation[q] as number) : 0), 0);
+    if (repas > REPAS_MAX_SEMAINE) {
+      erreurs.push({
+        champ: 'alimentation . plats',
+        message: `Au plus ${REPAS_MAX_SEMAINE} repas par semaine au total (midi et soir) : ${repas} renseignés.`,
+      });
     }
     if (erreurs.length) throw new ErreurSituation(erreurs);
     return situation;
   }
 
-  private normaliser(q: Question, valeur: ValeurReponse): number | string | undefined {
+  private normaliser(q: Question, valeur: ValeurReponse, b: Bornes): number | string | undefined {
     if (q.type === 'choix') {
       const brute = typeof valeur === 'string' ? valeur.replace(/^'(.*)'$/, '$1') : undefined;
       return brute !== undefined && q.possibilites.some((p) => p.valeur === brute) ? `'${brute}'` : undefined;
     }
     if (typeof valeur === 'number') {
-      return Number.isFinite(valeur) && valeur >= 0 && valeur <= VALEUR_MAX ? valeur : undefined;
+      const min = b.min ?? 0;
+      const max = b.max ?? VALEUR_MAX;
+      return Number.isFinite(valeur) && valeur >= min && valeur <= max ? valeur : undefined;
     }
     if (typeof valeur === 'boolean') return valeur ? 'oui' : 'non';
     return valeur === 'oui' || valeur === 'non' ? valeur : undefined;
   }
 
-  private messageType(q: Question): string {
+  private messageType(q: Question, b: Bornes): string {
     if (q.type === 'choix') return `Valeur attendue parmi : ${q.possibilites.map((p) => p.valeur).join(', ')}.`;
+    if (q.type === 'nombre') return `Valeur attendue : un nombre entre ${b.min ?? 0} et ${b.max ?? VALEUR_MAX}.`;
     return 'Valeur attendue : un nombre positif, ou "oui" / "non".';
   }
 

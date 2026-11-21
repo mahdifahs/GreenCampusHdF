@@ -5,6 +5,7 @@ import { afficherTableau } from './vue-ensemble.js';
 import { afficherEvenements } from './vue-evenements.js';
 import { afficherJournal } from './vue-journal.js';
 import { afficherParticipants } from './vue-participants.js';
+import { afficherQuestionnaire } from './vue-questionnaire.js';
 import { afficherSecurite } from './vue-securite.js';
 import { afficherStand } from './vue-stand.js';
 import { afficherVetements } from './vue-vetements.js';
@@ -71,6 +72,7 @@ const VUES_BASE = [
   ['ensemble', 'Vue d’ensemble'],
   ['evenements', 'Évènements'],
   ['annonce', 'Message du site'],
+  ['questionnaire', 'Questionnaire'],
   ['stand', 'Jour J'],
   ['vetements', 'Vêtements'],
   ['participants', 'Participants'],
@@ -88,6 +90,74 @@ const onglets = () => {
   if (estBenevole()) return VUES_BENEVOLE;
   return etat.moi?.role === 'SUPER_ADMIN' ? [...VUES_BASE, ['comptes-admin', 'Comptes admin']] : VUES_BASE;
 };
+
+// Barre de navigation. Sur PC : tous les onglets visibles, sur plusieurs lignes si besoin (pas de
+// défilement horizontal). Sur téléphone (CSS, max-width 760px) : un bouton « Menu · page courante »
+// qui ouvre la liste des pages autorisées pour ce rôle. Échap ou un clic à côté referment la liste.
+function navigation(vue) {
+  const titreCourant = onglets().find(([id]) => id === vue)?.[1] ?? '';
+  const bouton = el(
+    'button',
+    { type: 'button', class: 'menu-bouton', 'aria-expanded': 'false', 'aria-controls': 'liste-onglets' },
+    el('span', { class: 'menu-icone', 'aria-hidden': 'true' }, '☰'),
+    'Menu',
+    el('span', { class: 'menu-separateur', 'aria-hidden': 'true' }, '·'),
+    el('span', { class: 'menu-courant' }, titreCourant),
+  );
+  const liste = el(
+    'ul',
+    { id: 'liste-onglets', class: 'liste-onglets' },
+    onglets().map(([id, titre]) =>
+      el(
+        'li',
+        {},
+        el('button', {
+          type: 'button',
+          class: id === vue ? 'actif' : null,
+          'data-onglet': id,
+          'aria-current': id === vue ? 'page' : null,
+          onclick: () => {
+            fermer(false);
+            afficherApp(id, { focusNavigation: true });
+          },
+        }, titre),
+      ),
+    ),
+  );
+  const nav = el('nav', { id: 'onglets', 'aria-label': 'Pages de l’administration' }, bouton, liste);
+
+  function surTouche(ev) {
+    if (ev.key === 'Escape') fermer(true);
+  }
+  function surClic(ev) {
+    if (!nav.contains(ev.target)) fermer(false);
+  }
+  function fermer(rendreFocus) {
+    document.removeEventListener('keydown', surTouche);
+    document.removeEventListener('click', surClic, true);
+    if (!nav.classList.contains('ouvert')) return;
+    nav.classList.remove('ouvert');
+    bouton.setAttribute('aria-expanded', 'false');
+    if (rendreFocus) bouton.focus();
+  }
+  bouton.addEventListener('click', () => {
+    if (nav.classList.contains('ouvert')) return fermer(true);
+    nav.classList.add('ouvert');
+    bouton.setAttribute('aria-expanded', 'true');
+    (liste.querySelector('[aria-current="page"]') ?? liste.querySelector('button')).focus();
+    document.addEventListener('keydown', surTouche);
+    document.addEventListener('click', surClic, true);
+  });
+  return nav;
+}
+
+// Après un changement de page depuis la navigation, le focus clavier reste sur la navigation : sur
+// l'onglet actif (PC) ou sur le bouton Menu (téléphone, liste refermée).
+function remettreFocusNavigation() {
+  const actif = document.querySelector('#onglets [aria-current="page"]');
+  const cible = actif && actif.offsetParent !== null ? actif : document.querySelector('#onglets .menu-bouton');
+  cible?.focus();
+}
 
 // ---------- Mode maintenance (visible depuis tous les onglets) ----------
 
@@ -128,7 +198,7 @@ async function afficherMaintenance(zone) {
   );
 }
 
-async function afficherApp(vue = vueCourante) {
+async function afficherApp(vue = vueCourante, { focusNavigation = false } = {}) {
   if (!etat.moi) {
     try {
       etat.moi = await (await api('GET', '/moi')).json();
@@ -146,9 +216,10 @@ async function afficherApp(vue = vueCourante) {
   remplir(
     contenu,
     zoneMaintenance,
-    el('nav', { id: 'onglets' }, onglets().map(([id, titre]) => el('button', { class: id === vue ? 'actif' : null, onclick: () => afficherApp(id) }, titre))),
+    navigation(vue),
     zone,
   );
+  if (focusNavigation) remettreFocusNavigation();
   // Le mode maintenance ne concerne pas les bénévoles (route fermée à leur rôle).
   if (!estBenevole()) void afficherMaintenance(zoneMaintenance);
   try {
@@ -156,6 +227,7 @@ async function afficherApp(vue = vueCourante) {
       ensemble: afficherTableau,
       evenements: afficherEvenements,
       annonce: afficherAnnonce,
+      questionnaire: afficherQuestionnaire,
       stand: afficherStand,
       vetements: afficherVetements,
       participants: afficherParticipants,

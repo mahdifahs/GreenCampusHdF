@@ -43,10 +43,10 @@ function melanger<T>(liste: T[]): T[] {
   return copie;
 }
 
-// Plages réalistes pour les questions du stand de type « nombre » (l'API ne donne pas de min/max,
-// seulement le type réel de la question et, pour choix/oui-non, les possibilités valides).
+// Plages réalistes pour les questions du stand de type « nombre » (plus étroites que les bornes min/max
+// renvoyées par l'API, qui ne disent que ce qui est accepté).
 const PLAGES_NOMBRE: Record<string, [number, number]> = {
-  'transport . voiture . km': [0, 15000],
+  'transport . voiture . km': [500, 15000],
   'transport . transports commun . bus . heures par semaine': [0, 10],
   'transport . transports commun . métro ou tram . heures par semaine': [0, 10],
   'transport . train . km': [0, 5000],
@@ -58,7 +58,7 @@ const PLAGES_NOMBRE: Record<string, [number, number]> = {
   'alimentation . plats . viande rouge . nombre': [0, 14],
   'alimentation . plats . poisson gras . nombre': [0, 7],
   'alimentation . plats . poisson blanc . nombre': [0, 7],
-  'alimentation . boisson . chaude . café . nombre': [0, 21],
+  'alimentation . boisson . chaude . café . nombre': [0, 5],
   'logement . habitants': [1, 5],
   'logement . surface': [12, 100],
   'divers . numérique . internet . durée journalière': [0, 8],
@@ -81,6 +81,14 @@ function situationAleatoire(questions: QuestionStand[]): Record<string, string |
     } else {
       situation[q.dottedName] = choisir(q.possibilites).valeur;
     }
+  }
+  // L'API refuse plus de 14 repas par semaine au total : on retire des repas au hasard jusqu'à y revenir.
+  const plats = Object.keys(situation).filter((cle) => cle.startsWith('alimentation . plats . '));
+  let total = plats.reduce((somme, cle) => somme + (situation[cle] as number), 0);
+  while (total > 14) {
+    const cle = choisir(plats.filter((c) => (situation[c] as number) > 0));
+    situation[cle] = (situation[cle] as number) - 1;
+    total--;
   }
   return situation;
 }

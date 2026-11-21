@@ -18,6 +18,12 @@
   margin-top: var(--sp-1);
 }
 
+/* Une période sur plusieurs jours est longue : elle passe à la ligne sur téléphone. */
+.periode {
+  white-space: normal;
+  border-radius: var(--r-md);
+}
+
 .lieu {
   color: var(--muted);
   font-size: 0.9rem;

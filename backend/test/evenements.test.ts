@@ -43,7 +43,7 @@ describe('évènements (page d’accueil)', () => {
     await creer({ titre: 'Évènement tardif', dateDebut: '2027-06-01T09:00:00.000Z', statut: 'PUBLIE' });
     await creer({ titre: 'Évènement précoce', dateDebut: '2027-05-01T09:00:00.000Z', statut: 'PUBLIE' });
     const publics = (await app.inject({ method: 'GET', url: '/api/evenements' })).json();
-    const dates = publics.map((e: { dateDebut: string }) => e.dateDebut);
+    const dates = publics.map((e: { dateDebut: string | null }) => e.dateDebut).filter(Boolean);
     expect(dates).toEqual([...dates].sort());
   });
 
@@ -51,6 +51,36 @@ describe('évènements (page d’accueil)', () => {
     const creation = await creer({ titre: 'Sans détails', dateDebut: '2027-07-01T09:00:00.000Z', statut: 'PUBLIE' });
     expect(creation.json().description).toBeNull();
     expect(creation.json().lieu).toBeNull();
+  });
+
+  it('accepte un évènement sans date, affiché avant les évènements datés', async () => {
+    const creation = await creer({ titre: 'Version de test', description: 'Les données ne seront pas conservées.', statut: 'PUBLIE' });
+    expect(creation.statusCode).toBe(201);
+    expect(creation.json().dateDebut).toBeNull();
+    expect(creation.json().dateFin).toBeNull();
+
+    const publics = (await app.inject({ method: 'GET', url: '/api/evenements' })).json();
+    const index = publics.findIndex((e: { titre: string }) => e.titre === 'Version de test');
+    expect(index).toBeGreaterThanOrEqual(0);
+    // Tous les évènements sans date passent avant le premier évènement daté.
+    const premierDate = publics.findIndex((e: { dateDebut: string | null }) => e.dateDebut !== null);
+    expect(premierDate === -1 || index < premierDate).toBe(true);
+  });
+
+  it('refuse une heure de fin sans date de début, et permet de retirer les dates', async () => {
+    const finSeule = await creer({ titre: 'Fin sans début', dateFin: '2027-03-10T17:00:00.000Z' });
+    expect(finSeule.statusCode).toBe(400);
+    expect(finSeule.json().code).toBe('DATES_INCOHERENTES');
+
+    const ok = await creer({ titre: 'Collecte datée', dateDebut: '2027-03-10T09:00:00.000Z', dateFin: '2027-03-10T17:00:00.000Z' });
+    expect(ok.json().dateFin).toBe('2027-03-10T17:00:00.000Z');
+    const url = `/api/admin/evenements/${ok.json().id}`;
+    // Retirer le début en gardant la fin enregistrée : incohérent.
+    const debutRetire = await app.inject({ method: 'PATCH', url, headers: admin, payload: { dateDebut: null } });
+    expect(debutRetire.json().code).toBe('DATES_INCOHERENTES');
+    const sansDates = await app.inject({ method: 'PATCH', url, headers: admin, payload: { dateDebut: null, dateFin: null } });
+    expect(sansDates.statusCode).toBe(200);
+    expect(sansDates.json().dateDebut).toBeNull();
   });
 
   it('refuse un titre vide', async () => {

@@ -76,6 +76,8 @@ model Bilan {
   totalKg       Float
   parCategorie  Json
   createdAt     DateTime    @default(now())
+  // Réponses aux questions « information » (hors calcul) ; celles du modèle restent dans `situation`.
+  reponses      ReponseQuestion[]
 
   @@index([participantId, createdAt])
 }
@@ -300,7 +302,7 @@ model Evenement {
   titre       String
   description String?
   lieu        String?
-  dateDebut   DateTime
+  dateDebut   DateTime? // facultative : message sans date (ex. « version de test »)
   dateFin     DateTime?
   statut      StatutEvenement @default(BROUILLON)
   createdAt   DateTime        @default(now())
@@ -334,4 +336,51 @@ model Annonce {
   fin       DateTime?
   par       String?
   updatedAt DateTime      @updatedAt
+}
+
+// Questionnaire du bilan, géré depuis l'administration (onglet « Questionnaire »).
+// ADEME : question du modèle Nos Gestes Climat (dottedName), comptée dans le calcul ; texte affiché et
+// bornes modifiables (bornes toujours à l'intérieur de celles du modèle).
+// INFORMATION : question de l'équipe, hors calcul, pour des statistiques anonymes (nombre ou choix,
+// jamais de texte libre : RGPD).
+enum TypeQuestionBilan {
+  ADEME
+  INFORMATION
+}
+
+enum FormatQuestion {
+  NOMBRE
+  CHOIX
+}
+
+model QuestionBilan {
+  id         String            @id @default(uuid()) @db.Uuid
+  type       TypeQuestionBilan
+  dottedName String?           @unique
+  texte      String
+  // INFORMATION seulement (pour ADEME, le format, l'unité et les choix viennent du modèle).
+  format     FormatQuestion?
+  unite      String?
+  choix      String[]
+  min        Float?
+  max        Float?
+  ordre      Int
+  actif      Boolean           @default(true)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  reponses   ReponseQuestion[]
+
+  @@index([actif, ordre])
+}
+
+model ReponseQuestion {
+  bilanId      String        @db.Uuid
+  bilan        Bilan         @relation(fields: [bilanId], references: [id], onDelete: Cascade)
+  questionId   String        @db.Uuid
+  question     QuestionBilan @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  valeurNombre Float?
+  valeurChoix  String?
+
+  @@id([bilanId, questionId])
+  @@index([questionId])
 }

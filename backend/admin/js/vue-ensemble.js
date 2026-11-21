@@ -5,6 +5,7 @@ import { bandeauAlertes } from './vue-securite.js';
 const EXPORTS = [
   { jeu: 'quotidien', titre: 'Activité par jour', aide: 'Inscriptions, bilans, engagements, défis validés et CO2 évité, jour par jour (graphiques de la vidéo).' },
   { jeu: 'bilans', titre: 'Bilans', aide: 'Un bilan par ligne : filière, année, type, total et détail par poste.' },
+  { jeu: 'questionnaire', titre: 'Questions d’information', aide: 'Une réponse par ligne : bilan, filière, année, question, réponse (questions hors calcul de l’empreinte).' },
   { jeu: 'engagements', titre: 'Défis', aide: 'Un engagement par ligne : défi, semaine, statut, CO2 évité.' },
   { jeu: 'suivis', titre: 'Questionnaires de suivi', aide: 'Réponses J+7 et J+14, une colonne par question.' },
   { jeu: 'participants', titre: 'Participants', aide: 'Filière, année, date d’inscription et nombre de bilans, défis et suivis.' },

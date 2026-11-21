@@ -117,7 +117,7 @@ export async function afficherComptesAdmin(zone) {
                     class: 'secondaire',
                     onclick: async () => {
                       const texte = soiMeme
-                        ? 'Ton mot de passe actuel ne marchera plus : note bien le nouveau, affiché une seule fois.'
+                        ? 'Ton mot de passe actuel ne marchera plus et tes autres sessions (autres appareils) seront fermées ; celle-ci reste ouverte. Note bien le nouveau, affiché une seule fois.'
                         : `L’ancien mot de passe de ${c.prenom} ne marchera plus. Il faudra lui transmettre le nouveau, affiché une seule fois.`;
                       if (!(await confirmer(`Réinitialiser le mot de passe de « ${c.prenom} » ?`, texte, 'Réinitialiser'))) return;
                       try {

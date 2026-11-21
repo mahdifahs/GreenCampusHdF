@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
 import { Card } from '../components/Card'
-import { ApiError, dernierBilan, enregistrerBilan, estimerBilan, questionsStand } from '../lib/api'
-import type { Bilan as BilanData, BilanDetail, Categorie, Estimation, Question } from '../lib/api'
+import { ApiError, dernierBilan, enregistrerBilan, estimerBilan, questionsInformation, questionsStand } from '../lib/api'
+import type { Bilan as BilanData, BilanDetail, Categorie, Estimation, Question, QuestionInformation } from '../lib/api'
 import styles from './Bilan.module.css'
 import { MentionSource } from '../components/MentionSource'
 
@@ -30,21 +30,42 @@ function grouper(questions: Question[]) {
   return [...groupes.entries()]
 }
 
-// Réponses du formulaire → situation envoyée à l'API (champs vides ou nombres invalides ignorés).
+// Hors des bornes renvoyées par l'API, la réponse serait refusée à l'enregistrement.
+function horsBornes(q: Pick<Question, 'type' | 'min' | 'max'>, valeur: string | undefined) {
+  if (q.type !== 'nombre' || valeur === undefined || valeur === '') return false
+  const n = Number(valeur)
+  return !Number.isFinite(n) || n < (q.min ?? 0) || (q.max !== null && n > q.max)
+}
+
+// Les plats se comptent sur 14 repas par semaine (midi et soir) : l'API refuse un total plus élevé.
+const REPAS_MAX_SEMAINE = 14
+const estPlat = (q: Question) => q.dottedName.startsWith('alimentation . plats . ')
+
+// Réponses du formulaire → situation envoyée à l'API (champs vides ou hors bornes ignorés).
 function versSituation(questions: Question[], reponses: Record<string, string>, garder?: (q: Question) => boolean) {
   const situation: Record<string, number | string> = {}
   for (const q of questions) {
     const valeur = reponses[q.dottedName]
     if (valeur === undefined || valeur === '' || (garder && !garder(q))) continue
     if (q.type === 'nombre') {
-      const n = Number(valeur)
-      if (!Number.isFinite(n) || n < 0) continue
-      situation[q.dottedName] = n
+      if (horsBornes(q, valeur)) continue
+      situation[q.dottedName] = Number(valeur)
     } else {
       situation[q.dottedName] = valeur
     }
   }
   return situation
+}
+
+// Réponses aux questions « information » (hors calcul) : vides ou hors bornes ignorées.
+function versInformations(questions: QuestionInformation[], reponses: Record<string, string>) {
+  const informations: Record<string, number | string> = {}
+  for (const q of questions) {
+    const valeur = reponses[q.id]
+    if (valeur === undefined || valeur === '' || horsBornes(q, valeur)) continue
+    informations[q.id] = q.type === 'nombre' ? Number(valeur) : valeur
+  }
+  return informations
 }
 
 const DELAI_ESTIMATION_MS = 600
@@ -54,6 +75,8 @@ export function Bilan() {
   const [dernier, setDernier] = useState<BilanDetail | null>(null)
   const [vue, setVue] = useState<'chargement' | 'formulaire' | 'resultat'>('chargement')
   const [reponses, setReponses] = useState<Record<string, string>>({})
+  const [infos, setInfos] = useState<QuestionInformation[]>([])
+  const [reponsesInfo, setReponsesInfo] = useState<Record<string, string>>({})
   const [resultat, setResultat] = useState<BilanData | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const [enCours, setEnCours] = useState(false)
@@ -86,13 +109,15 @@ export function Bilan() {
   const estApplicable = (q: Question) => !applicables || applicables.has(q.dottedName)
 
   useEffect(() => {
-    Promise.all([questionsStand(), dernierBilan()])
-      .then(([q, d]) => {
+    Promise.all([questionsStand(), questionsInformation(), dernierBilan()])
+      .then(([q, i, d]) => {
         setQuestions(q)
+        setInfos(i)
         setDernier(d)
         if (d) {
           setResultat(d)
           setReponses(Object.fromEntries(Object.entries(d.situation).map(([k, v]) => [k, dequoter(v)])))
+          setReponsesInfo(Object.fromEntries(Object.entries(d.informations ?? {}).map(([k, v]) => [k, String(v)])))
           setVue('resultat')
         } else {
           setVue('formulaire')
@@ -103,13 +128,26 @@ export function Bilan() {
 
   const groupes = useMemo(() => (questions ? grouper(questions) : []), [questions])
 
+  const repas = (questions ?? [])
+    .filter((q) => estPlat(q) && estApplicable(q) && !horsBornes(q, reponses[q.dottedName]))
+    .reduce((somme, q) => somme + (Number(reponses[q.dottedName]) || 0), 0)
+  const tropDeRepas = repas > REPAS_MAX_SEMAINE
+  const reponsesInvalides =
+    tropDeRepas ||
+    (questions ?? []).some((q) => estApplicable(q) && horsBornes(q, reponses[q.dottedName])) ||
+    infos.some((q) => horsBornes(q, reponsesInfo[q.id]))
+
   async function soumettre() {
     setErreur(null)
+    if (reponsesInvalides) {
+      setErreur('Corrige les réponses signalées en rouge avant d’enregistrer.')
+      return
+    }
     setEnCours(true)
     // Une réponse devenue sans objet (ex. km en voiture alors qu'on n'en prend jamais) n'est pas enregistrée.
     const situation = versSituation(questions ?? [], reponses, estApplicable)
     try {
-      const bilan = await enregistrerBilan(situation)
+      const bilan = await enregistrerBilan(situation, versInformations(infos, reponsesInfo))
       setResultat(bilan)
       setVue('resultat')
     } catch (e) {
@@ -181,8 +219,11 @@ export function Bilan() {
                     <input
                       id={q.dottedName}
                       type="number"
-                      min={0}
+                      min={q.min ?? 0}
+                      max={q.max ?? undefined}
                       className={styles.input}
+                      aria-invalid={horsBornes(q, reponses[q.dottedName]) || undefined}
+                      aria-describedby={horsBornes(q, reponses[q.dottedName]) ? `${q.dottedName}-erreur` : undefined}
                       value={reponses[q.dottedName] ?? ''}
                       onChange={(ev) => setReponses((r) => ({ ...r, [q.dottedName]: ev.target.value }))}
                     />
@@ -203,12 +244,77 @@ export function Bilan() {
                     ))}
                   </select>
                 )}
+                {horsBornes(q, reponses[q.dottedName]) && (
+                  <span id={`${q.dottedName}-erreur`} className={styles.aideErreur}>
+                    Entre {q.min ?? 0} et {q.max}{q.unite ? ` ${q.unite}` : ''}.
+                  </span>
+                )}
+                {q === qs.filter(estPlat).at(-1) && (
+                  <p className={tropDeRepas ? styles.compteurErreur : styles.compteur} aria-live="polite">
+                    Repas renseignés : {repas} / {REPAS_MAX_SEMAINE} par semaine (midi et soir)
+                    {tropDeRepas && '. Retire des repas pour revenir à 14 au plus.'}
+                  </p>
+                )}
               </div>
             ))}
           </div>
         </Card>
         )
       })}
+
+      {infos.length > 0 && (
+        <Card>
+          <h2 style={{ fontSize: '1.1rem' }}>Questions de l’équipe</h2>
+          <p className={styles.aideCarte}>
+            Facultatives. Elles ne changent pas ton empreinte : les réponses servent seulement aux statistiques
+            anonymes du projet.
+          </p>
+          <div className={styles.questions}>
+            {infos.map((q) => {
+              const id = `info-${q.id}`
+              const invalide = horsBornes(q, reponsesInfo[q.id])
+              const changer = (valeur: string) => setReponsesInfo((r) => ({ ...r, [q.id]: valeur }))
+              return (
+                <div key={q.id} className={styles.champ}>
+                  <label className={styles.label} htmlFor={id}>
+                    {q.question}
+                  </label>
+                  {q.type === 'nombre' ? (
+                    <div className={styles.nombreAvecUnite}>
+                      <input
+                        id={id}
+                        type="number"
+                        min={q.min ?? 0}
+                        max={q.max ?? undefined}
+                        className={styles.input}
+                        aria-invalid={invalide || undefined}
+                        aria-describedby={invalide ? `${id}-erreur` : undefined}
+                        value={reponsesInfo[q.id] ?? ''}
+                        onChange={(ev) => changer(ev.target.value)}
+                      />
+                      {q.unite && <span className={styles.unite}>{q.unite}</span>}
+                    </div>
+                  ) : (
+                    <select id={id} className={styles.input} value={reponsesInfo[q.id] ?? ''} onChange={(ev) => changer(ev.target.value)}>
+                      <option value="">Ne pas répondre</option>
+                      {q.possibilites.map((p) => (
+                        <option key={p.valeur} value={p.valeur}>
+                          {p.titre}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {invalide && (
+                    <span id={`${id}-erreur`} className={styles.aideErreur}>
+                      Entre {q.min ?? 0} et {q.max}{q.unite ? ` ${q.unite}` : ''}.
+                    </span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      )}
 
       <div className={styles.bandeau}>
         <div className={styles.estimation} aria-live="polite">
@@ -221,7 +327,7 @@ export function Bilan() {
             Annuler
           </Button>
         )}
-        <Button onClick={soumettre} disabled={enCours || !questions}>
+        <Button onClick={soumettre} disabled={enCours || !questions || reponsesInvalides}>
           {enCours ? 'Calcul en cours…' : 'Enregistrer mon bilan'}
         </Button>
         </div>

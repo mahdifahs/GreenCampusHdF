@@ -164,7 +164,7 @@ export async function changerActivationDefi(prisma: PrismaClient, id: number, ac
 // ---------- exports CSV ----------
 // Les participants n'y apparaissent que par leur identifiant aléatoire (pas de pseudo, aucune donnée personnelle).
 
-export const JEUX_EXPORT = ['participants', 'bilans', 'engagements', 'suivis', 'quotidien', 'quiz', 'stand', 'vetements', 'securite', 'journal'] as const;
+export const JEUX_EXPORT = ['participants', 'bilans', 'questionnaire', 'engagements', 'suivis', 'quotidien', 'quiz', 'stand', 'vetements', 'securite', 'journal'] as const;
 export type JeuExport = (typeof JEUX_EXPORT)[number];
 
 export async function exporter(prisma: PrismaClient, jeu: JeuExport): Promise<string> {
@@ -208,6 +208,30 @@ export async function exporter(prisma: PrismaClient, jeu: JeuExport): Promise<st
             b.participant.exclu,
           ];
         }),
+      );
+    }
+    case 'questionnaire': {
+      // Réponses aux questions « information » (hors calcul), une ligne par réponse.
+      const lignes = await prisma.reponseQuestion.findMany({
+        orderBy: { bilan: { createdAt: 'asc' } },
+        include: {
+          question: { select: { texte: true, actif: true } },
+          bilan: { select: { participantId: true, createdAt: true, participant: { select: { annee: true, exclu: true, filiere: { select: { libelle: true } } } } } },
+        },
+      });
+      return versCsv(
+        ['bilan', 'participant', 'filiere', 'annee', 'date', 'question', 'question_active', 'reponse', 'exclu'],
+        lignes.map((r) => [
+          r.bilanId,
+          r.bilan.participantId,
+          r.bilan.participant.filiere.libelle,
+          r.bilan.participant.annee,
+          r.bilan.createdAt,
+          r.question.texte,
+          r.question.actif,
+          r.valeurChoix ?? r.valeurNombre,
+          r.bilan.participant.exclu,
+        ]),
       );
     }
     case 'engagements': {

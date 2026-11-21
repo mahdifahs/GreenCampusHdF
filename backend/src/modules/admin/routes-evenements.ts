@@ -17,7 +17,7 @@ const routes: FastifyPluginAsyncZod = async (app) => {
     titre: z.string(),
     description: z.string().nullable(),
     lieu: z.string().nullable(),
-    dateDebut: z.iso.datetime(),
+    dateDebut: z.iso.datetime().nullable(),
     dateFin: z.iso.datetime().nullable(),
     statut: statutEvenementSchema,
     createdAt: z.iso.datetime(),
@@ -28,7 +28,8 @@ const routes: FastifyPluginAsyncZod = async (app) => {
     titre: z.string().trim().min(1).max(200),
     description: z.string().trim().max(2000).nullable().optional(),
     lieu: z.string().trim().max(200).nullable().optional(),
-    dateDebut: z.coerce.date(),
+    // Facultative : un évènement sans date sert de simple message (ex. « version de test »).
+    dateDebut: z.coerce.date().nullable().optional(),
     dateFin: z.coerce.date().nullable().optional(),
     statut: statutEvenementSchema.optional(),
   };

@@ -93,7 +93,10 @@ const routes: FastifyPluginAsyncZod<{ limiteComptes: number; limiteBenevoles?: n
         response: { 200: z.object({ motDePasse: z.string() }), 401: erreurSchema, 403: erreurSchema, 404: erreurSchema },
       },
     },
-    async (request) => comptes.reinitialiserMotDePasse(app.prisma, request.compteAdmin!.prenom, request.params.id),
+    // jti = session de l'appelant : elle n'appartient qu'à lui, donc n'est épargnée que s'il
+    // réinitialise son propre mot de passe.
+    async (request) =>
+      comptes.reinitialiserMotDePasse(app.prisma, request.compteAdmin!.prenom, request.params.id, request.user.jti),
   );
 
   app.delete(

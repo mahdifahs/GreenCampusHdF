@@ -32,6 +32,9 @@ export type Question = {
   type: 'nombre' | 'choix' | 'oui-non'
   unite: string | null
   possibilites: { valeur: string; titre: string }[]
+  // Bornes acceptées par l'API pour une question « nombre » (null pour les autres).
+  min: number | null
+  max: number | null
 }
 
 export type Bilan = {
@@ -44,7 +47,19 @@ export type Bilan = {
   createdAt: string
 }
 
-export type BilanDetail = Bilan & { situation: Record<string, number | string> }
+// `informations` : réponses aux questions « information » (hors calcul), par identifiant de question.
+export type BilanDetail = Bilan & { situation: Record<string, number | string>; informations: Record<string, number | string> }
+
+// Question de l'équipe, hors calcul de l'empreinte (statistiques anonymes) : nombre borné ou choix.
+export type QuestionInformation = {
+  id: string
+  question: string
+  type: 'nombre' | 'choix'
+  unite: string | null
+  possibilites: { valeur: string; titre: string }[]
+  min: number | null
+  max: number | null
+}
 
 export type CategorieDefi = 'TRANSPORT' | 'ALIMENTATION' | 'LOGEMENT' | 'DIVERS' | 'NUMERIQUE'
 
@@ -135,7 +150,8 @@ export type Evenement = {
   titre: string
   description: string | null
   lieu: string | null
-  dateDebut: string
+  /** null : simple message sans date (ex. « version de test »). */
+  dateDebut: string | null
   dateFin: string | null
 }
 
@@ -310,6 +326,7 @@ export async function deconnecter() {
 }
 
 export const questionsStand = () => apiFetch<Question[]>('/bilans/questions-stand')
+export const questionsInformation = () => apiFetch<QuestionInformation[]>('/bilans/questions-information')
 
 export async function dernierBilan(): Promise<BilanDetail | null> {
   try {
@@ -320,8 +337,8 @@ export async function dernierBilan(): Promise<BilanDetail | null> {
   }
 }
 
-export const enregistrerBilan = (situation: Record<string, number | string>) =>
-  apiFetch<Bilan>('/bilans', { method: 'POST', body: JSON.stringify({ type: 'STAND', situation }) })
+export const enregistrerBilan = (situation: Record<string, number | string>, informations: Record<string, number | string> = {}) =>
+  apiFetch<Bilan>('/bilans', { method: 'POST', body: JSON.stringify({ type: 'STAND', situation, informations }) })
 
 export type Estimation = { totalKg: number; parCategorie: Record<Categorie, number>; applicables: string[] }
 

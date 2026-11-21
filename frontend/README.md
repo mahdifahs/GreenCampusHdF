@@ -66,7 +66,11 @@ initiale du nom), accessible depuis le pied de page.
 
 - **Bilan** : à l'ouverture du formulaire puis 600 ms après la dernière saisie, `POST
   /api/bilans/estimation` renvoie le total estimé (bandeau fixé en bas) et les questions encore
-  applicables ; les autres sont masquées et ne sont pas envoyées à l'enregistrement.
+  applicables ; les autres sont masquées et ne sont pas envoyées à l'enregistrement. Champs
+  « nombre » bornés par `min`/`max` de l'API : hors bornes, message sous le champ et bouton
+  d'enregistrement désactivé ; compteur « Repas renseignés : x / 14 » après les plats (rouge au-delà).
+  Questions et bornes réglées dans l'onglet admin *Questionnaire*. Carte « Questions de l'équipe »
+  (`GET /api/bilans/questions-information`) : facultatives, hors calcul, envoyées dans `informations`.
 - **Code de récupération** : le QR code contient `/connexion#code=…` ; le code reste dans le
   fragment de l'URL (jamais envoyé au serveur ni journalisé), puis est effacé de la barre
   d'adresse après connexion.

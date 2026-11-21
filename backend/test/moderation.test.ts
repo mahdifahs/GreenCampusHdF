@@ -98,7 +98,7 @@ describe('liste et fiche des participants', () => {
 
   it('repère un bilan aux réponses fantaisistes', async () => {
     const p = await participant();
-    await bilan(p.headers, { 'transport . voiture . utilisateur': 'propriétaire', 'transport . voiture . km': 5_000_000 });
+    await bilan(p.headers, { 'transport . voiture . utilisateur': 'propriétaire', 'transport . voiture . km': 99_999 }); // maximum accepté par le modèle
     const f = await fiche(p.id);
     expect(f.bilans[0].invraisemblable).toBe(true);
     expect(f.alertes.map((a: { code: string }) => a.code)).toContain('BILAN_INVRAISEMBLABLE');

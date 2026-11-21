@@ -88,15 +88,18 @@ export async function bloquer(prisma: PrismaClient, auteur: string, id: string, 
   return versPublic(maj);
 }
 
-export async function reinitialiserMotDePasse(prisma: PrismaClient, auteur: string, id: string) {
+export async function reinitialiserMotDePasse(prisma: PrismaClient, auteur: string, id: string, sessionAGarder?: string) {
   const compte = await trouver(prisma, id);
   const motDePasse = genererMotDePasse();
   // Une réinitialisation suppose souvent un mot de passe compromis : les sessions ouvertes avec
-  // l'ancien sont fermées en même temps.
+  // l'ancien sont fermées en même temps. Sauf celle de l'auteur (`sessionAGarder`) : un super-admin
+  // qui réinitialise son propre mot de passe doit rester connecté pour voir le nouveau.
   const hash = await argon2.hash(motDePasse);
   await prisma.$transaction([
     prisma.compteAdmin.update({ where: { id }, data: { motDePasseHash: hash } }),
-    prisma.session.deleteMany({ where: { compteAdminId: id } }),
+    prisma.session.deleteMany({
+      where: { compteAdminId: id, ...(sessionAGarder ? { NOT: { id: sessionAGarder } } : {}) },
+    }),
   ]);
   await journaliser(prisma, auteur, 'REINITIALISATION_MOT_DE_PASSE_ADMIN', compte.prenom);
   return { motDePasse };

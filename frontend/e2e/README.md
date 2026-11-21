@@ -7,7 +7,9 @@ PostgreSQL dédiée, front construit puis servi par `vite preview`. Ils complèt
 | Fichier | Parcours |
 |---|---|
 | `etudiant.spec.ts` | Inscription (cookie de session `HttpOnly`), bilan avec estimation en direct, défi choisi puis « Tenu » avec confirmation, session conservée au rechargement, déconnexion, reconnexion avec le code de récupération, suppression du compte. Tableau de bord public sans compte. |
-| `admin.spec.ts` | Super-admin : chaque onglet de `/admin/` s'affiche sans erreur JavaScript. Bénévole créé depuis « Comptes admin » avec le mot de passe généré : Jour J et Vêtements seulement (le reste refusé par l'API). Cookie admin recopié avant une déconnexion : refusé. |
+| `bilan.spec.ts` | Bornes du bilan : heures de bus au-delà de 40 signalées sous le champ, total des plats au-delà de 14 repas signalé, enregistrement bloqué tant que les réponses sont hors bornes. |
+| `questionnaire.spec.ts` | Question d'information à choix ajoutée depuis l'onglet admin *Questionnaire*, carte « Questions de l'équipe » côté étudiant, réponse retrouvée à la reprise du bilan, statistiques dans l'admin, suppression impossible puis désactivation (plus posée). |
+| `admin.spec.ts` | Super-admin : chaque onglet de `/admin/` s'affiche sans erreur JavaScript. Navigation : sur PC tous les onglets visibles sans défilement (onglet ouvert marqué `aria-current` et gardé visible) ; sur téléphone bouton « Menu · page courante » (`aria-expanded`, Échap, clic à côté, focus clavier). Bénévole créé depuis « Comptes admin » avec le mot de passe généré : Jour J et Vêtements seulement (le reste refusé par l'API). Cookie admin recopié avant une déconnexion : refusé. |
 | `maintenance.spec.ts` | Mode maintenance basculé depuis l'admin : page dédiée côté étudiant, puis retour automatique à la remise en ligne (environ 30 s, intervalle de revérification de la page). |
 
 Chaque parcours échoue aussi s'il voit une erreur JavaScript dans la page.

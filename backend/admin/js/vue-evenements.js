@@ -21,7 +21,7 @@ export async function afficherEvenements(zone) {
           titre: donnees.get('titre').trim(),
           description: donnees.get('description').trim() || undefined,
           lieu: donnees.get('lieu').trim() || undefined,
-          dateDebut: debut ? new Date(debut).toISOString() : undefined,
+          dateDebut: debut ? new Date(debut).toISOString() : null,
           dateFin: fin ? new Date(fin).toISOString() : null,
         };
         try {
@@ -41,9 +41,9 @@ export async function afficherEvenements(zone) {
     el('textarea', { name: 'description', maxlength: 2000 }, edition?.description ?? ''),
     el('label', {}, 'Lieu (facultatif)'),
     el('input', { name: 'lieu', maxlength: 200, value: edition?.lieu ?? '' }),
-    el('label', {}, 'Début'),
-    el('input', { type: 'datetime-local', name: 'dateDebut', required: true, value: versDatetimeLocal(edition?.dateDebut) }),
-    el('label', {}, 'Fin (facultative)'),
+    el('label', {}, 'Début (facultatif)'),
+    el('input', { type: 'datetime-local', name: 'dateDebut', value: versDatetimeLocal(edition?.dateDebut) }),
+    el('label', {}, 'Fin (facultative, conseillée : indique jusqu’à quelle heure venir)'),
     el('input', { type: 'datetime-local', name: 'dateFin', value: versDatetimeLocal(edition?.dateFin) }),
     el(
       'div',
@@ -59,6 +59,7 @@ export async function afficherEvenements(zone) {
     zone,
     el('h2', {}, 'Évènements'),
     el('p', { class: 'aide' }, 'Un évènement n’apparaît sur la page d’accueil publique qu’une fois publié ; un brouillon reste invisible du public.'),
+    el('p', { class: 'aide' }, 'Sans date de début, il s’affiche comme un simple message, en tête de liste (ex. « version de test »). Une heure de fin demande une date de début.'),
     form,
     el(
       'div',
@@ -74,7 +75,7 @@ export async function afficherEvenements(zone) {
                   'tr',
                   {},
                   el('td', {}, e.titre),
-                  el('td', {}, date(e.dateDebut)),
+                  el('td', {}, e.dateDebut ? date(e.dateDebut) : 'sans date'),
                   el('td', {}, date(e.dateFin)),
                   el('td', {}, e.lieu ?? '—'),
                   el('td', {}, el('span', { class: e.statut === 'PUBLIE' ? 'statut' : 'statut EN_COURS' }, e.statut === 'PUBLIE' ? 'publié' : 'brouillon')),

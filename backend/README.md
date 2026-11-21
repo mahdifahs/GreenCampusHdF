@@ -50,7 +50,7 @@ API REST de l'application GreenCampus HdF : bilan carbone basé sur le modèle *
 | Page « Équipe » (`/equipe`) | Fonctionnel | Essai manuel (captures d'écran Playwright) |
 | Comptes admin nominatifs (prénom + mot de passe généré, gestion par un super-admin : créer/bloquer/réinitialiser/supprimer) | Fonctionnel | Tests automatiques, essai manuel |
 
-**224 tests automatiques** passent (unitaires et intégration sur une vraie base PostgreSQL).
+**243 tests automatiques** passent (unitaires et intégration sur une vraie base PostgreSQL).
 
 ---
 
@@ -182,11 +182,12 @@ Stand (J0)                          Chez soi                       J+7 / J+14
 | PATCH (participant) | `/api/me` | Modifier filière ou année |
 | DELETE (participant) | `/api/me` | Supprimer mon compte et **toutes** mes données (efface aussi le cookie de session) |
 | **Bilan** | | |
-| GET | `/api/bilans/questions-stand` | Les 29 questions de la version courte (texte, type, unité, choix possibles) |
-| POST (participant) | `/api/bilans` | Enregistrer un bilan : `{ type: "STAND" \| "COMPLET", situation: { "<question>": <réponse> } }` |
+| GET | `/api/bilans/questions-stand` | Questions du bilan comptées dans le calcul (modèle ADEME), dans l'ordre réglé dans l'admin : texte, type, unité, bornes `min`/`max`, choix possibles (29 au départ) |
+| GET | `/api/bilans/questions-information` | Questions « information » de l'équipe, hors calcul (nombre borné ou choix) |
+| POST (participant) | `/api/bilans` | Enregistrer un bilan : `{ type: "STAND" \| "COMPLET", situation: { "<question>": <réponse> }, informations?: { "<id question information>": <réponse> } }` |
 | POST (participant) | `/api/bilans/estimation` | Estimation en direct pendant la saisie, **sans rien enregistrer** : `{ situation }` → `{ totalKg, parCategorie, applicables }` (questions du stand qui ont encore un sens avec ces réponses) |
 | GET (participant) | `/api/bilans` | Historique de mes bilans |
-| GET (participant) | `/api/bilans/dernier` | Mon dernier bilan **avec mes réponses** (pour le reprendre) ; 404 s'il n'y en a pas |
+| GET (participant) | `/api/bilans/dernier` | Mon dernier bilan **avec mes réponses** (`situation` et `informations`, pour le reprendre) ; 404 s'il n'y en a pas |
 | **Défis** | | |
 | GET (participant) | `/api/defis` | Catalogue personnalisé selon mon bilan, avec 3 défis recommandés |
 | POST (participant) | `/api/engagements` | M'engager sur un défi cette semaine : `{ defiId }` |
@@ -208,11 +209,15 @@ Stand (J0)                          Chez soi                       J+7 / J+14
 | GET | `/api/tableau-de-bord` | Statistiques collectives anonymes (public) |
 | GET | `/api/vetements/collecte` | Totaux de la collecte de vêtements : pièces, kilos et CO2 évité (public, aucun détail par jour) |
 | **Page d'accueil** (public) | | |
-| GET | `/api/evenements` | Évènements publiés, triés par date de début (dates du/des évènements campus) |
+| GET | `/api/evenements` | Évènements publiés : ceux sans date (simple message) d'abord, puis par date de début |
 | **Administration** (si `ADMIN_ENABLED=true`) | | |
 | POST | `/api/admin/session` | `{ motDePasse, nom }` (prénom = identifiant du compte) → 204 et cookie `gc_admin` (limité à `/api/admin`, sans durée : effacé à la fermeture du navigateur ; jeton valable 12 h). Compte inconnu/bloqué/mauvais mot de passe → même erreur générique. 5 essais par minute et par IP, verrou de 15 min après 20 échecs sur un même prénom |
 | DELETE | `/api/admin/session` | Déconnexion : ferme la session en base et efface le cookie `gc_admin` |
 | GET (admin, bénévole) | `/api/admin/moi` | Prénom et rôle (`ADMIN`/`SUPER_ADMIN`/`BENEVOLE`) du compte connecté |
+| GET / POST (admin) | `/api/admin/questionnaire` | Questionnaire du bilan (toutes les questions, nombre de bilans qui y ont répondu, statistiques des questions « information ») / ajouter une question : `{ type: "ADEME", dottedName, texte?, min?, max? }` ou `{ type: "INFORMATION", texte, format: "NOMBRE" \| "CHOIX", min, max, unite? \| choix }`. Fermé aux bénévoles, journalisé |
+| GET (admin) | `/api/admin/questionnaire/modele?recherche=` | Questions du modèle ADEME pas encore dans le questionnaire (20 au plus) |
+| PATCH / DELETE (admin) | `/api/admin/questionnaire/:id` | Modifier (texte, bornes, unité, choix, `actif`) / supprimer (409 `QUESTION_DEJA_REPONDUE` si des bilans y ont répondu : désactiver) |
+| POST (admin) | `/api/admin/questionnaire/:id/deplacer` | `{ sens: "haut" \| "bas" }` : monter ou descendre dans sa catégorie |
 | GET / PUT (admin) | `/api/admin/annonce` | Message d'information du site / l'enregistrer, le publier ou le retirer (`{ texte, niveau, publiee, fin? }`, 300 caractères max, un seul message à la fois, fermé aux bénévoles, journalisé) |
 | GET / PUT (admin) | `/api/admin/maintenance` | État du mode maintenance / l'activer ou le couper (`{ actif }`, tout compte admin, journalisé) |
 | GET (super-admin) | `/api/admin/comptes-admin` | Liste des comptes admin |
@@ -230,9 +235,9 @@ Stand (J0)                          Chez soi                       J+7 / J+14
 | GET (admin) | `/api/admin/journal` | 200 dernières actions de l'équipe (qui, quoi, quand, motif). Filtres : `?auteur=&action=&du=AAAA-MM-JJ&au=AAAA-MM-JJ` (journées en heure de Paris) |
 | GET (admin) | `/api/admin/journal/filtres` | Auteurs et actions présents dans le journal (listes des filtres) |
 | GET (admin) | `/api/admin/securite` | Journal de sécurité (OWASP A09) : alertes actives, compteurs des dernières 24 h, événements paginés (`type?`, `page`, `parPage`) |
-| GET (admin) | `/api/admin/export/:jeu` | CSV : `quotidien`, `bilans`, `engagements`, `suivis`, `participants`, `quiz`, `stand`, `vetements`, `securite`, `journal` (tout le journal ; le pseudo d'un participant visé par une modération y est remplacé par `participant`) |
+| GET (admin) | `/api/admin/export/:jeu` | CSV : `quotidien`, `bilans`, `questionnaire` (réponses aux questions « information »), `engagements`, `suivis`, `participants`, `quiz`, `stand`, `vetements`, `securite`, `journal` (tout le journal ; le pseudo d'un participant visé par une modération y est remplacé par `participant`) |
 | GET (admin) | `/api/admin/evenements` | Tous les évènements de la page d'accueil, brouillons compris |
-| POST (admin) | `/api/admin/evenements` | Créer un évènement (`BROUILLON` par défaut) : `{ titre, description?, lieu?, dateDebut, dateFin?, statut? }` |
+| POST (admin) | `/api/admin/evenements` | Créer un évènement (`BROUILLON` par défaut) : `{ titre, description?, lieu?, dateDebut?, dateFin?, statut? }`. Sans `dateDebut`, c'est un simple message (ex. « version de test ») ; `dateFin` exige `dateDebut` |
 | PATCH (admin) | `/api/admin/evenements/:id` | Modifier un évènement, y compris `statut` (publier/dépublier) |
 | DELETE (admin) | `/api/admin/evenements/:id` | Supprimer définitivement un évènement |
 | **Jour J** (admin) | | |
@@ -284,7 +289,8 @@ Toutes les erreurs ont la même forme, avec un **message en français affichable
 | `NOM_DEJA_UTILISE`, `TYPE_UTILISE`, `MATIERE_UTILISEE` | 409 | Type/matière de vêtement : nom déjà pris, ou suppression refusée car déjà utilisé (désactiver plutôt) |
 | `PRENOM_DEJA_UTILISE`, `LIMITE_COMPTES_ATTEINTE`, `ACTION_SUR_SOI_MEME`, `DERNIER_SUPER_ADMIN` | 409 | Comptes admin : prénom déjà pris, `ADMIN_LIMITE_COMPTES` ou `ADMIN_LIMITE_BENEVOLES` atteinte, auto-blocage/auto-suppression refusé, dernier super-admin actif |
 | `DATE_PASSEE` | 400 | Message d'information publié avec une date de fin déjà passée |
-| `DATES_INCOHERENTES` | 400 | Évènement dont la fin est avant le début (création ou modification) |
+| `BORNES_REQUISES`, `BORNES_INVALIDES`, `BORNES_HORS_MODELE`, `BORNES_SANS_OBJET`, `CHOIX_REQUIS`, `CHOIX_EN_DOUBLE`, `CHOIX_TROP_NOMBREUX`, `CHOIX_SANS_OBJET`, `UNITE_SANS_OBJET`, `QUESTION_INCONNUE` (400) ; `QUESTION_DEJA_PRESENTE`, `QUESTION_DEJA_REPONDUE`, `CHOIX_DEJA_REPONDU` (409) | 400 / 409 | Questionnaire (admin) : bornes manquantes, min > max ou hors des limites du modèle ADEME ; choix invalides ; question déjà présente ; suppression d'une question déjà répondue ; retrait d'un choix déjà répondu |
+| `DATES_INCOHERENTES` | 400 | Évènement dont la fin est avant le début, ou qui a une fin sans début (création ou modification) |
 | `SUIVI_PAS_ENCORE_DISPONIBLE`, `SUIVI_DEJA_REMPLI` | 409 | Questionnaire trop tôt ou déjà rempli |
 | `TROP_DE_REQUETES` | 429 | Limite de débit atteinte |
 | `ADMIN_VERROUILLE` | 429 | Connexion admin verrouillée après trop d'échecs (15 minutes) |
@@ -313,6 +319,9 @@ Le code de `frontend/` montre un exemple qui fonctionne pour chaque point ci-des
 - C'est la route `/` : remplace l'ancien écran de connexion direct. Accessible **sans compte**.
   Affiche les évènements publiés (`GET /api/evenements`, public, triés par date de début) et un
   bouton vers `/connexion` (inscription/reconnexion) — et vers l'espace participant si déjà connecté.
+- Chaque évènement affiche sa période : « mercredi 2 décembre, de 09:00 à 17:00 » (heure de fin
+  montrée pour que personne ne vienne après la fermeture), « du … au … » sur plusieurs jours.
+  Un évènement sans date (simple message) s'affiche sans badge de date, en tête de liste.
 - Pas de évènement publié : afficher un message neutre, pas une erreur (la liste peut être vide).
 - Publication côté équipe : un évènement créé en brouillon (`/admin/`, onglet « Évènements »)
   n'apparaît sur cette page qu'une fois son statut passé à `publié`.
@@ -327,7 +336,8 @@ Le code de `frontend/` montre un exemple qui fonctionne pour chaque point ci-des
 - La case de consentement est obligatoire (`consentement: true`), liée à la page `/confidentialite` (voir [section 7](#7-sécurité-et-rgpd)).
 
 ### Bilan carbone : point important
-- `GET /api/bilans/questions-stand` donne la liste, les textes, les types (`nombre`, `choix`, `oui-non`), les unités et les libellés des choix.
+- `GET /api/bilans/questions-stand` donne la liste, les textes, les types (`nombre`, `choix`, `oui-non`), les unités, les bornes `min`/`max` des questions « nombre » et les libellés des choix.
+- **Bornes des réponses** (depuis le 2026-11-20) : une réponse « nombre » hors de `min`/`max` est refusée (`400 SITUATION_INVALIDE`, « Valeur attendue : un nombre entre X et Y »). Les bornes viennent du modèle ADEME (`plancher`/`plafond` : 0 à 21 repas par type de plat, 0 à 10 cafés par jour, 1 à 99 999 km en voiture…) ; le projet ajoute 0 à 40 h/semaine pour le bus et le métro/tram, que le modèle ne borne pas (`BORNES_PROJET` dans `src/lib/ngc.ts`). Les 6 types de plats sont en plus plafonnés à **14 repas par semaine au total** (champ d'erreur `alimentation . plats`). Les bilans déjà enregistrés ne sont pas revalidés. Les bornes se règlent ensuite question par question dans l'onglet admin *Questionnaire* (toujours à l'intérieur des limites du modèle).
 - **Une question non posée vaut la moyenne française.** Par exemple, sans réponse à « km en voiture », le calcul compte 11 849 km/an, ce qui gonfle le transport d'un étudiant. Le front doit donc :
   1. **savoir quelles questions sont applicables** selon les réponses précédentes : `POST /api/bilans/estimation` renvoie la liste `applicables` (c'est ce que fait `frontend/`). Exemple : « motorisation » et « km » seulement si la personne utilise une voiture ; « heures de bus » seulement si elle prend le bus ;
   2. poser toutes les sous-questions applicables ;
@@ -451,7 +461,12 @@ redéploie indépendamment (changer le front ne redémarre pas l'API, et inverse
 - Modèle officiel de l'ADEME (`@incubateur-ademe/nosgestesclimat`, France, en français), exécuté avec `publicodes`. Chargé une fois au démarrage, environ 60 à 140 ms par calcul.
 - **Le résultat est toujours recalculé côté serveur** : un total envoyé par le navigateur est ignoré, ce qui garantit un classement fiable.
 - Résultat : `totalKg` (kg CO2e/an), `parCategorie` (transport, alimentation, logement, divers, servicesSocietaux) et `categorieDominante` (la plus forte des 4 catégories sur lesquelles on peut agir).
-- La liste des questions du stand est dans `src/modules/bilans/questions-stand.ts`.
+- **Questionnaire géré dans l'admin** (onglet *Questionnaire*, depuis le 2026-11-20, table `QuestionBilan`). Au premier usage, la table vide est remplie avec les 29 questions de `src/modules/bilans/questions-stand.ts` (ordre et bornes par défaut) ; ensuite seule la base fait foi. Deux types :
+  - **ADEME** : choisie dans le modèle (recherche), comptée dans le calcul. Texte affiché, bornes (à l'intérieur des limites du modèle) et ordre modifiables. Sans réponse : moyenne française du modèle.
+  - **Information** : question de l'équipe, **hors calcul** (ne change pas l'empreinte), pour des statistiques anonymes : nombre borné (min et max obligatoires) ou choix dans une liste (2 à 20). Jamais de texte libre (RGPD). Réponses dans `ReponseQuestion`, supprimées avec le bilan (donc avec le compte).
+  - **Question déjà répondue** : la désactiver (plus posée, réponses et totaux gardés, réactivable) ; suppression refusée. Type et format non modifiables (créer une nouvelle question). Une réponse déjà choisie ne peut pas être retirée des choix. Les bilans enregistrés ne sont **jamais recalculés** (sinon le classement bougerait tout seul).
+  - Statistiques d'une question « information » : dernière réponse de chaque participant, comptes exclus mis à part. Questionnaire public en cache 10 s (vidé à chaque modification).
+  - Prévu (étape 2) : questions « personnalisées » comptées dans le calcul avec un facteur d'émission sourcé (sans source fiable : comptées 0).
 
 ### Défis
 - Le CO2 évité **n'est pas saisi à la main** : chaque défi (`prisma/defis.ts`) est relié à une **action du modèle Nos Gestes Climat**, dont le gain est calculé avec le dernier bilan de la personne (gain annuel ÷ 52 pour une semaine).
@@ -555,7 +570,8 @@ récupérés) et une **journée de don** (vêtements donnés), chacune identifi�
   y compris une route ajoutée plus tard, renvoie 403 et est notée au journal de sécurité
   (`ADMIN_ACCES_BENEVOLE_REFUSE`, alerte au-delà de 5 par heure). Leurs corrections de compteurs
   figurent au journal avec leur prénom, comme pour les admins.
-- **Page `/admin/`**, par onglet : *Vue d'ensemble* (chiffres clés, résumé de l'évènement — personnes venues, vêtements récupérés et donnés, CO2 évité —, rappels — participants abonnés, relances envoyées et questionnaires remplis par étape —, bilans par jour, tableau des défis — choisis, validés, non tenus, CO2 évité — avec une case pour les activer ou désactiver, répartition des réponses aux questionnaires J+7 / J+14, boutons d'export) ; *Évènements* (créer/publier/dépublier/supprimer les évènements affichés sur la page d'accueil publique) ; *Message du site* (bandeau d'information en haut de toutes les pages publiques : texte de 300 caractères maximum, type Info / Attention / Important, date de fin facultative, aperçu ; un seul message à la fois ; un message Important ne peut pas être masqué par les visiteurs) ; *Jour J* (nombre de personnes venues) ; *Vêtements* (catégories, quantités récupérées/données, bilan CO2 — voir ci-dessous) ; *Participants* (modération) ; *Journal* (actions de l'équipe, y compris la gestion des comptes admin, filtrables par membre, action et période, export CSV) ; *Sécurité* (journal et alertes, OWASP A09) ; *Comptes admin* (super-admin seulement, voir ci-dessus). Même identité visuelle que le site public (`admin/style.css`, `admin/fonts/`).
+- **Page `/admin/`**, par onglet : *Vue d'ensemble* (chiffres clés, résumé de l'évènement — personnes venues, vêtements récupérés et donnés, CO2 évité —, rappels — participants abonnés, relances envoyées et questionnaires remplis par étape —, bilans par jour, tableau des défis — choisis, validés, non tenus, CO2 évité — avec une case pour les activer ou désactiver, répartition des réponses aux questionnaires J+7 / J+14, boutons d'export) ; *Évènements* (créer/publier/dépublier/supprimer les évènements affichés sur la page d'accueil publique) ; *Questionnaire* (questions du bilan : ajouter depuis le modèle ADEME ou une question d'information hors calcul, reformuler, régler les bornes, ordonner, désactiver ; statistiques des questions d'information) ; *Message du site* (bandeau d'information en haut de toutes les pages publiques : texte de 300 caractères maximum, type Info / Attention / Important, date de fin facultative, aperçu ; un seul message à la fois ; un message Important ne peut pas être masqué par les visiteurs) ; *Jour J* (nombre de personnes venues) ; *Vêtements* (catégories, quantités récupérées/données, bilan CO2 — voir ci-dessous) ; *Participants* (modération) ; *Journal* (actions de l'équipe, y compris la gestion des comptes admin, filtrables par membre, action et période, export CSV) ; *Sécurité* (journal et alertes, OWASP A09) ; *Comptes admin* (super-admin seulement, voir ci-dessus). Même identité visuelle que le site public (`admin/style.css`, `admin/fonts/`).
+- **Navigation** (depuis le 2026-11-20) : sur PC, tous les onglets autorisés pour le rôle sont visibles (sur plusieurs lignes si besoin, jamais de défilement horizontal), l'onglet ouvert est mis en évidence (`aria-current="page"`) et garde le focus clavier. Sur téléphone (760 px de large ou moins), un bouton « ☰ Menu · page courante » (`aria-expanded`) ouvre la liste des pages ; Échap ou un clic à côté la referment.
 - **Utilisation au stand (téléphone)** : l'onglet ouvert reste dans l'adresse (`/admin/#vetements`), donc recharger la page ne fait pas changer d'onglet. Les tableaux larges défilent dans leur cadre. Dans *Vêtements*, chaque combinaison type et matière déjà saisie dans la journée a ses boutons −1 / +1 (récupérés et donnés), et « Corriger » modifie les deux totaux ensemble. La journée proposée par défaut est celle du jour en heure locale, recalculée à chaque affichage. Les confirmations et saisies passent par une fenêtre intégrée à la page (Échap ou « Annuler » n'exécutent rien), les erreurs par un message en haut de l'écran.
 - **Exports CSV** pour Excel ou LibreOffice en français : séparateur `;`, virgule décimale, BOM UTF-8, dates à l'heure de Paris. Les cellules commençant par `= + - @` sont neutralisées (**injection de formules**). Les participants n'y figurent que par leur identifiant aléatoire (ni pseudo, ni code) : ce sont des données pseudonymes, à ne pas publier telles quelles.
 
@@ -621,6 +637,8 @@ Le tableau de bord public étant mis en cache 10 s, une exclusion y apparaît au
 | `Session` | Sessions ouvertes (participant **ou** compte admin, contrainte `CHECK`) : l'id est repris dans le jeton (`jti`). Déconnexion = ligne supprimée, donc un cookie recopié ne vaut plus rien. Aucune IP ni navigateur. Effacées avec le compte, et à la réinitialisation d'un mot de passe admin ; lignes expirées purgées automatiquement (au plus une fois par heure) |
 | `EvenementSecurite` | Journal des événements de sécurité (OWASP A09), contient des IP, purgé à 30 jours |
 | `Evenement` | Évènements de la page d'accueil publique, statut brouillon/publié |
+| `QuestionBilan` | Questionnaire du bilan géré en admin : type ADEME (dottedName, texte affiché, bornes) ou INFORMATION (texte, format nombre/choix, unité, bornes ou choix), ordre, actif |
+| `ReponseQuestion` | Réponse d'un bilan à une question « information » (nombre ou choix), supprimée avec le bilan |
 | `Annonce` | Message d'information du site (une seule ligne : texte, niveau, publié ou non, date de fin facultative, modifié par qui), géré depuis l'admin |
 | `Maintenance` | Mode maintenance du site (une seule ligne : actif, depuis quand, activé par qui), basculé depuis l'admin |
 
@@ -642,7 +660,7 @@ Toutes les données d'un participant sont supprimées en cascade avec son compte
 - Administration par comptes nominatifs (prénom + mot de passe généré par l'application, haché argon2, comparaison à temps constant même pour un prénom inconnu), avec un rôle distinct de celui des participants.
 - Exports CSV protégés contre l'injection de formules.
 - Modération : alertes de triche, exclusion des statistiques, blocage et journal des actions de l'équipe.
-- **Pas d'injection publicodes** : en publicodes, une chaîne est une formule. Seules les questions connues du modèle sont acceptées, avec des valeurs contrôlées (nombre positif, oui/non, choix prévus).
+- **Pas d'injection publicodes** : en publicodes, une chaîne est une formule. Seules les questions connues du modèle sont acceptées, avec des valeurs contrôlées (nombre dans les bornes du modèle, oui/non, choix prévus).
 - Toutes les entrées sont validées par des schémas Zod. Les champs inconnus sont ignorés.
 - Limitation de débit sur l'inscription, la connexion et le calcul de bilan. Les limites sont larges, car tout le campus peut sortir par une seule IP.
 - En-têtes de sécurité (Helmet), CORS limité au front.
@@ -674,14 +692,14 @@ npm test
 > le terminal de VS Code). Vitest charge alors ses modules deux fois. Se placer dans le même dossier
 > avec `C:` en majuscule (`cd C:\Users\…\backend` dans PowerShell) puis relancer `npm test`.
 
-224 tests, répartis en 23 fichiers :
+243 tests, répartis en 24 fichiers :
 
 | Fichier | Ce qui est testé |
 |---|---|
 | `recovery-code.test.ts` | Format, tolérance de saisie et unicité des codes ; pseudos |
 | `participants.test.ts` | Inscription, consentement, reconnexion, profil, suppression, limitation de débit, erreurs en français |
-| `ngc.test.ts` | Calcul du bilan, validation et normalisation des réponses, **refus des injections**, questions du stand, existence des actions des défis, personnalisation des gains, calcul des semaines |
-| `bilans-defis.test.ts` | Bilans de bout en bout, catalogue, recommandations, cycle complet d’un engagement, changement d’avis sans réécrire la date de 1re réponse, isolation entre participants, suppression en cascade complète (bilans, défis, suivis, abonnements push, relances, session) |
+| `ngc.test.ts` | Calcul du bilan, validation et normalisation des réponses, **refus des injections**, bornes des réponses et plafond de 14 repas, questions du stand, existence des actions des défis, personnalisation des gains, calcul des semaines |
+| `bilans-defis.test.ts` | Bilans de bout en bout, bornes exposées et réponses hors bornes refusées, catalogue, recommandations, cycle complet d’un engagement, changement d’avis sans réécrire la date de 1re réponse, isolation entre participants, suppression en cascade complète (bilans, défis, suivis, abonnements push, relances, session) |
 | `tableau-relances.test.ts` | Seuil d'anonymat, cumul du CO2 évité, questionnaires J+7 / J+14, abonnements, envoi unique des relances, abonnements expirés |
 | `ia.test.ts` | Guide (chaque chiffre a une source), quiz (aucune réponse divulguée avant de jouer, correction, refus des choix inconnus, anonymat), tableau de bord, admin et export du quiz, question J+14 |
 | `moderation.test.ts` | Détection des alertes, liste filtrée et recherche, fiche, exclusion (effet sur le tableau de bord public), blocage (session et reconnexion), annulation de défi, suppression, journal avec auteur et motif |
@@ -699,8 +717,9 @@ npm test
 | `benevoles-stats.test.ts` | Rôle bénévole (routes ouvertes, refus en 403 journalisés avant même la validation du corps, liste blanche cohérente avec les routes), limite séparée des bénévoles, statistiques des rappels et de l'évènement, filtres du journal (membre, action, période), export CSV du journal sans pseudo |
 | `journal-admin.test.ts` | Journal des actions de l'équipe : évènements, saisie directe des compteurs (avec l'ancienne valeur, sans les +1/−1), catalogue et quantités de vêtements, suppression refusée non journalisée, consultation via `/journal` |
 | `journal-securite.test.ts` | Journalisation des connexions/échecs admin, codes invalides, accès refusés, comptes bloqués, alertes par seuil, purge à 30 jours, consultation et export admin |
+| `questionnaire.test.ts` | Questionnaire admin : 29 questions de départ, fermé aux bénévoles, ajout depuis le modèle (recherche, bornes dans les limites, doublon refusé), bornes admin appliquées aux bilans et à l'estimation, désactivation d'une question répondue (suppression refusée), suppression sans réponse, déplacement ; questions « information » : validations, réponses hors calcul, reprise du bilan, statistiques, export CSV, choix répondus non retirables, désactivation, effacement RGPD |
 | `annonce.test.ts` | Message d'information : brouillon invisible, publication sans authentification, un seul message (le nouveau remplace l'ancien, version qui change), retrait, date de fin (retrait automatique malgré le cache), date passée / texte vide ou trop long / niveau inconnu refusés, journal, fermé aux bénévoles |
-| `evenements.test.ts` | Page d'accueil : un brouillon reste invisible du public, apparaît une fois publié et plus après dépublication, tri par date, fin avant le début refusée, CRUD admin, 404, auth requise |
+| `evenements.test.ts` | Page d'accueil : un brouillon reste invisible du public, apparaît une fois publié et plus après dépublication, tri par date, évènement sans date (en tête de liste), fin avant le début ou sans début refusée, CRUD admin, 404, auth requise |
 
 Les tests utilisent la base `greencampus_test`. Ils y appliquent les migrations puis vident ses tables, et **refusent de tourner sur une base dont le nom ne finit pas par `_test`**.
 

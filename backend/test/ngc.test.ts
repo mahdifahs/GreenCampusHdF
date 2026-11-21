@@ -70,6 +70,46 @@ describe('modèle Nos Gestes Climat', () => {
     expect(tenter({ 'logement . surface': '10 * 1000' })).toEqual(['logement . surface']);
   });
 
+  it('applique les bornes du modèle, et celles du projet pour le bus et le métro', () => {
+    const tenter = (s: Record<string, number>) => {
+      try {
+        ngc.validerSituation(s);
+        return [];
+      } catch (e) {
+        return (e as ErreurSituation).erreurs.map((x) => x.message);
+      }
+    };
+    const bus = 'transport . transports commun . bus . heures par semaine';
+    expect(ngc.question(bus)).toMatchObject({ min: 0, max: 40 }); // le modèle n'en donne pas
+    expect(ngc.question('alimentation . boisson . chaude . café . nombre')).toMatchObject({ min: 0, max: 10 });
+    expect(ngc.question('logement . surface')).toMatchObject({ min: 1, max: 999 });
+    expect(ngc.question('logement . type')).toMatchObject({ min: null, max: null });
+
+    expect(tenter({ [bus]: 40, 'transport . transports commun . métro ou tram . heures par semaine': 40 })).toEqual([]);
+    expect(tenter({ [bus]: 41 })).toEqual(['Valeur attendue : un nombre entre 0 et 40.']);
+    expect(tenter({ 'transport . transports commun . métro ou tram . heures par semaine': 500 })).toHaveLength(1);
+    expect(tenter({ 'alimentation . boisson . chaude . café . nombre': 11 })).toHaveLength(1);
+    expect(tenter({ 'logement . surface': 0 })).toHaveLength(1);
+    expect(tenter({ 'transport . voiture . km': 100_000 })).toHaveLength(1);
+  });
+
+  it('plafonne le total des repas à 14 par semaine', () => {
+    const plats = (rouge: number, vege: number) => ({
+      'alimentation . plats . viande rouge . nombre': rouge,
+      'alimentation . plats . végétarien . nombre': vege,
+    });
+    expect(() => ngc.validerSituation(plats(7, 7))).not.toThrow();
+    expect(() => ngc.validerSituation(plats(14, 0))).not.toThrow();
+    try {
+      ngc.validerSituation(plats(8, 7));
+      expect.unreachable();
+    } catch (e) {
+      expect((e as ErreurSituation).erreurs).toEqual([
+        { champ: 'alimentation . plats', message: 'Au plus 14 repas par semaine au total (midi et soir) : 15 renseignés.' },
+      ]);
+    }
+  });
+
   it('connaît toutes les questions de la version stand', () => {
     for (const q of QUESTIONS_STAND) expect(ngc.question(q), q).toBeDefined();
     const voiture = ngc.question('transport . voiture . utilisateur')!;

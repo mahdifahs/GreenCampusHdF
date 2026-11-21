@@ -2,7 +2,6 @@ import { TypeBilan } from '@prisma/client';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { erreurSchema } from '../../lib/schemas.js';
-import { QUESTIONS_STAND } from './questions-stand.js';
 import * as service from './service.js';
 
 const categoriesSchema = z.object({
@@ -25,6 +24,7 @@ const bilanSchema = z.object({
 
 const bilanDetailSchema = bilanSchema.extend({
   situation: z.record(z.string(), z.union([z.number(), z.string()])),
+  informations: z.record(z.string(), z.union([z.number(), z.string()])).describe('Réponses aux questions « information », par identifiant de question'),
 });
 
 const questionSchema = z.object({
@@ -34,7 +34,28 @@ const questionSchema = z.object({
   type: z.enum(['nombre', 'choix', 'oui-non']),
   unite: z.string().nullable(),
   possibilites: z.array(z.object({ valeur: z.string(), titre: z.string() })),
+  min: z.number().nullable().describe('Valeur minimale (questions « nombre »)'),
+  max: z.number().nullable().describe('Valeur maximale (questions « nombre »)'),
 });
+
+const questionInformationSchema = z.object({
+  id: z.uuid(),
+  question: z.string(),
+  type: z.enum(['nombre', 'choix']),
+  unite: z.string().nullable(),
+  possibilites: z.array(z.object({ valeur: z.string(), titre: z.string() })),
+  min: z.number().nullable(),
+  max: z.number().nullable(),
+});
+
+const situationSchema = z
+  .record(z.string().max(200), z.union([z.number(), z.string().max(100), z.boolean()]))
+  .refine((s) => Object.keys(s).length <= 400, 'Trop de réponses.');
+const informationsSchema = z
+  .record(z.uuid(), z.union([z.number(), z.string().max(100)]))
+  .refine((s) => Object.keys(s).length <= 100, 'Trop de réponses.')
+  .optional()
+  .describe('Réponses aux questions « information » (GET /bilans/questions-information), hors calcul');
 
 const securite: Record<string, string[]>[] = [{ bearerAuth: [] }, { cookieParticipant: [] }];
 
@@ -44,14 +65,28 @@ const routes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['Bilans'],
-        summary: 'Questions de la version courte du bilan (stand)',
+        summary: 'Questions du bilan comptées dans le calcul (modèle ADEME), dans l’ordre',
         description:
-          'Les autres questions du modèle Nos Gestes Climat gardent leur valeur par défaut (moyenne française). ' +
-          'POST /bilans/estimation indique lesquelles sont applicables selon les réponses déjà données.',
+          'Questionnaire réglé dans l’administration (texte, bornes, ordre). Les autres questions du modèle Nos ' +
+          'Gestes Climat gardent leur valeur par défaut (moyenne française). POST /bilans/estimation indique ' +
+          'lesquelles sont applicables selon les réponses déjà données.',
         response: { 200: z.array(questionSchema) },
       },
     },
-    async () => QUESTIONS_STAND.map((q) => app.ngc.question(q)!),
+    async () => (await app.questionnaire.actif()).ademe.map(({ id: _id, ...q }) => q),
+  );
+
+  app.get(
+    '/bilans/questions-information',
+    {
+      schema: {
+        tags: ['Bilans'],
+        summary: 'Questions « information » de l’équipe (hors calcul de l’empreinte)',
+        description: 'Réponses facultatives, utilisées seulement pour des statistiques anonymes. Envoyées dans `informations` de POST /bilans.',
+        response: { 200: z.array(questionInformationSchema) },
+      },
+    },
+    async () => (await app.questionnaire.actif()).information,
   );
 
   app.post(
@@ -68,11 +103,7 @@ const routes: FastifyPluginAsyncZod = async (app) => {
           'Même validation que POST /bilans. Renvoie le total et le détail estimés, et la liste des questions du ' +
           'stand encore applicables (ex. « km en voiture » disparaît si la personne ne prend jamais la voiture).',
         security: securite,
-        body: z.object({
-          situation: z
-            .record(z.string().max(200), z.union([z.number(), z.string().max(100), z.boolean()]))
-            .refine((s) => Object.keys(s).length <= 400, 'Trop de réponses.'),
-        }),
+        body: z.object({ situation: situationSchema }),
         response: {
           200: z.object({
             totalKg: z.number(),
@@ -85,7 +116,7 @@ const routes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (request) => {
-      const { totalKg, parCategorie, applicables } = service.estimer(app.ngc, request.body.situation, QUESTIONS_STAND);
+      const { totalKg, parCategorie, applicables } = service.estimer(app.ngc, await app.questionnaire.actif(), request.body.situation);
       return { totalKg, parCategorie, applicables };
     },
   );
@@ -106,15 +137,14 @@ const routes: FastifyPluginAsyncZod = async (app) => {
         security: securite,
         body: z.object({
           type: z.enum(TypeBilan),
-          situation: z
-            .record(z.string().max(200), z.union([z.number(), z.string().max(100), z.boolean()]))
-            .refine((s) => Object.keys(s).length <= 400, 'Trop de réponses.'),
+          situation: situationSchema,
+          informations: informationsSchema,
         }),
         response: { 201: bilanSchema, 400: erreurSchema, 401: erreurSchema },
       },
     },
     async (request, reply) => {
-      const bilan = await service.enregistrer(app.prisma, app.ngc, request.participantId, request.body);
+      const bilan = await service.enregistrer(app.prisma, app.ngc, request.participantId, await app.questionnaire.actif(), request.body);
       return reply.status(201).send(service.versPublic(bilan));
     },
   );

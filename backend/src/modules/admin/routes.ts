@@ -9,6 +9,7 @@ import routesComptes from './routes-comptes.js';
 import routesEvenements from './routes-evenements.js';
 import routesGeneral from './routes-general.js';
 import routesModeration from './routes-moderation.js';
+import routesQuestionnaire from './routes-questionnaire.js';
 import routesStand from './routes-stand.js';
 
 // Routes /api/admin : connexion (ce fichier), puis les routes protégées, réparties par thème dans
@@ -133,6 +134,7 @@ const routes: FastifyPluginAsyncZod<{ limiteComptes: number; limiteBenevoles?: n
     await prive.register(routesStand);
     await prive.register(routesEvenements);
     await prive.register(routesAnnonce);
+    await prive.register(routesQuestionnaire);
   });
 };
 

@@ -232,6 +232,20 @@ describe('révocation côté serveur (table Session)', () => {
     // La session du super-admin qui a fait la réinitialisation reste ouverte.
     expect((await app.inject({ method: 'GET', url: '/api/admin/moi', headers: { authorization: superAdmin.authorization } })).statusCode).toBe(200);
   });
+
+  it('réinitialiser son propre mot de passe garde la session en cours et ferme les autres', async () => {
+    const superAdmin = await connecterAdmin(app);
+    const compte = await app.prisma.compteAdmin.findUniqueOrThrow({ where: { prenom: superAdmin.prenom } });
+    // Deuxième session du même compte (autre appareil), ouverte directement en base.
+    const autre = await app.prisma.session.create({
+      data: { compteAdminId: compte.id, expiresAt: new Date(Date.now() + 3_600_000) },
+    });
+    const reset = await app.inject({ method: 'POST', url: `/api/admin/comptes-admin/${compte.id}/reinitialiser-mot-de-passe`, headers: { authorization: superAdmin.authorization } });
+    expect(reset.statusCode).toBe(200);
+    expect(reset.json().motDePasse).toBeTruthy();
+    expect((await app.inject({ method: 'GET', url: '/api/admin/moi', headers: { authorization: superAdmin.authorization } })).statusCode).toBe(200);
+    expect(await app.prisma.session.findUnique({ where: { id: autre.id } })).toBeNull();
+  });
 });
 
 describe('en production', () => {

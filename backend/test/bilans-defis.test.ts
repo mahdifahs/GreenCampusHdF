@@ -80,6 +80,31 @@ describe('bilans', () => {
     ]);
   });
 
+  it('expose les bornes des questions et refuse les valeurs hors bornes', async () => {
+    const questions = (await app.inject({ method: 'GET', url: '/api/bilans/questions-stand' })).json();
+    const bus = questions.find((q: { dottedName: string }) => q.dottedName === 'transport . transports commun . bus . heures par semaine');
+    expect(bus).toMatchObject({ min: 0, max: 40 });
+
+    const headers = await nouveauParticipant();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/bilans',
+      headers,
+      payload: {
+        type: 'STAND',
+        situation: {
+          'transport . transports commun . bus . heures par semaine': 200,
+          'alimentation . plats . viande rouge . nombre': 21,
+        },
+      },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().details.map((d: { champ: string }) => d.champ).sort()).toEqual([
+      'alimentation . plats',
+      'transport . transports commun . bus . heures par semaine',
+    ]);
+  });
+
   it('estime en direct sans rien enregistrer, et dit quelles questions restent applicables', async () => {
     const headers = await nouveauParticipant();
     const estimer = (situation: Record<string, string | number>) =>

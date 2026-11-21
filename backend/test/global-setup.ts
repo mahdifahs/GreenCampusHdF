@@ -16,7 +16,7 @@ export default async function setup(project: TestProject) {
 
   const prisma = new PrismaClient({ datasourceUrl: url });
   await prisma.$executeRawUnsafe(
-    'TRUNCATE "Annonce", "Maintenance", "Session", "CompteAdmin", "Evenement", "EvenementSecurite", "ActionAdmin", "QuantiteVetement", "TypeVetement", "Matiere", "CompteurJour", "QuizReponse", "Relance", "PushAbonnement", "Suivi", "Engagement", "Bilan", "Participant", "Defi" RESTART IDENTITY CASCADE',
+    'TRUNCATE "ReponseQuestion", "QuestionBilan", "Annonce", "Maintenance", "Session", "CompteAdmin", "Evenement", "EvenementSecurite", "ActionAdmin", "QuantiteVetement", "TypeVetement", "Matiere", "CompteurJour", "QuizReponse", "Relance", "PushAbonnement", "Suivi", "Engagement", "Bilan", "Participant", "Defi" RESTART IDENTITY CASCADE',
   );
   await seedFilieres(prisma);
   await seedDefis(prisma);

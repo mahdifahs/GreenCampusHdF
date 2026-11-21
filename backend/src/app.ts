@@ -30,6 +30,7 @@ import suivisRoutes from './modules/suivis/routes.js';
 import tableauRoutes from './modules/tableau-de-bord/routes.js';
 import vetementsRoutes from './modules/vetements/routes.js';
 import annonce from './plugins/annonce.js';
+import questionnaire from './plugins/questionnaire.js';
 import auth from './plugins/auth.js';
 import maintenance from './plugins/maintenance.js';
 import ngc from './plugins/ngc.js';
@@ -115,6 +116,7 @@ export async function buildApp(config: Config) {
   await app.register(ngc);
   await app.register(maintenance);
   await app.register(annonce);
+  await app.register(questionnaire);
   await app.register(relances, {
     clePublique: config.VAPID_PUBLIC_KEY,
     clePrivee: config.VAPID_PRIVATE_KEY,
